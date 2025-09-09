@@ -54,17 +54,10 @@ const btnGenerar = $('#btnGenerar'), btnImprimir = $('#btnImprimir'), btnLimpiar
 // Defaults
 if (fecha) fecha.value = nowLocal();
 
-// === Generador del código RDV: AÑOMES-GDR-RDV-0DÍA
-function generateCode(baseDate){
-  const d = baseDate || (fecha && fecha.value ? new Date(fecha.value) : new Date());
-  const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
-  // Formato solicitado: 2509-GDR-RDV-009
-  return `${y}${m}-GDR-RDV-0${day}-V0`;
-}
-
-
 const updateLiveCode = () => {
-  const code = generateCode();
+  const d = fecha && fecha.value ? new Date(fecha.value) : new Date();
+  const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
+  const code = `${y}${m}-RDV-${(cod && cod.value || '???').toUpperCase().replace(/\s+/g,'')}-${day}`;
   if (liveCodigo) liveCodigo.textContent = code;
   return code;
 };
@@ -162,17 +155,16 @@ function validar(){
 function fillReport(){
   const d = fecha && fecha.value ? new Date(fecha.value) : new Date();
   const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
-  const code = generateCode(d);
+  const code = `${y}${m}-RDV-${(cod && cod.value || '').toUpperCase().replace(/\s+/g,'')}-${day}`;
 
   const repCod = $('#rep-codigo'); if (repCod) repCod.textContent = code;
   $('#rep-fecha').textContent = new Date(fecha.value).toLocaleString();
-  const repApto = $('#rep-apto'); repApto.textContent = aptoSi && aptoSi.checked ? 'OPERATIVO' : 'MANTENIMIENTO';
+  const repApto = $('#rep-apto'); repApto.textContent = aptoSi && aptoSi.checked ? 'APTO' : 'NO APTO';
   repApto.style.color = aptoSi && aptoSi.checked ? 'green' : 'red';
   $('#rep-cod').textContent = (cod && cod.value || '').toUpperCase();
   $('#rep-placa').textContent = (placa && placa.value || '').toUpperCase();
   $('#rep-km').textContent = Number(km && km.value || 0).toLocaleString();
   $('#rep-ubic').textContent = ubicacion && ubicacion.value || '—';
-  const repObs = $('#rep-obs'); if (repObs) repObs.textContent = (obsGeneral && obsGeneral.value || '—');
   $('#rep-conductor').textContent = conductor && conductor.value || '—';
   $('#rep-inspector').textContent = inspector && inspector.value || '—';
 

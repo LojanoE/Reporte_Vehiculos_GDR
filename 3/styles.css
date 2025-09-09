@@ -56,7 +56,6 @@ html, body { background:#0b1220; color:#e5e7eb; }
   #report { display:block !important; }
   .print-only { display:block !important; }
 
-  #toast { display:none !important; }       /* evita el “recuadro” del aviso */
   /* Encabezado de impresión con logos */
   .rep-topbar{
     display:grid;
@@ -78,17 +77,8 @@ html, body { background:#0b1220; color:#e5e7eb; }
   .rep-card { border:1px solid #000; border-radius: 6px; padding:10px; }
   .rep-table { width:100%; border-collapse: collapse; }
   .rep-table th, .rep-table td { border:1px solid #000; padding:4px 6px; font-size:12px; }
-
-  #report .print-grid { break-before: page; page-break-before: always; }
 }
 @media screen {
   #report { display:none; }
   .print-only { display:none; }
-}
-
-
-@media print{
-  .rep-obs-block{ border:1px solid #000; border-radius:4px; padding:6px 8px; margin-bottom:8px; }
-  .rep-obs-title{ font-weight:700; font-size:11pt; margin-bottom:4px; }
-  .rep-obs-content{ white-space:pre-wrap; font-size:10pt; min-height:14mm; }
 }
