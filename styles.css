@@ -1,0 +1,36 @@
+:root { --ink:#0f172a; --muted:#334155; --brand:#0ea5e9; --ok:#16a34a; --warn:#f59e0b; --crit:#ef4444; }
+html, body { background:#0b1220; color:#e5e7eb; }
+.card { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.08); border-radius: 1rem; }
+.chip { border:1px solid rgba(255,255,255,.12); border-radius:9999px; padding:.15rem .6rem; font-size:.75rem; }
+.soft { box-shadow: 0 10px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06); }
+.grid-2 { display:grid; grid-template-columns: 1fr; gap:1rem; }
+@media(min-width:768px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
+.sys-select { appearance:none; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:.5rem; padding:.4rem .6rem; width:100%; }
+.sys-note { background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.15); border-radius:.5rem; padding:.4rem .6rem; width:100%; }
+.thumb { aspect-ratio: 4/3; object-fit:cover; border-radius:.75rem; border:1px solid rgba(255,255,255,.12); background:#0a1020; }
+.btn { border-radius: .75rem; padding: .7rem 1rem; border:1px solid rgba(255,255,255,.16); }
+.btn-primary { background:linear-gradient(180deg, #22d3ee, #0ea5e9); color:#0b1220; font-weight:600; }
+.btn-ghost { background:transparent; }
+.btn-danger { background:linear-gradient(180deg, #fb7185, #ef4444); color:#fff; }
+.kpi { border: 1px solid rgba(255,255,255,.12); border-radius:.75rem; padding:.4rem .6rem; }
+.kbd { border:1px solid rgba(255,255,255,.2); border-radius:.4rem; padding:.1rem .35rem; font-size:.75rem; }
+.note { color:#cbd5e1; font-size:.85rem; }
+.sr-only { position:absolute; width:1px; height:1px; margin:-1px; clip:rect(0,0,0,0); overflow:hidden; }
+/* ======= PRINT (A4) ======= */
+@page { size: A4; margin: 12mm; }
+@media print {
+  body { background:#fff; color:#000; }
+  .no-print { display:none !important; }
+  #report { display:block !important; }
+  .print-only { display:block !important; }
+  header, footer { break-inside: avoid; }
+  .print-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  .print-grid img { width:100%; height: 110mm; object-fit: contain; border:1px solid #999; }
+  .rep-card { border:1px solid #000; border-radius: 6px; padding:10px; }
+  .rep-table { width:100%; border-collapse: collapse; }
+  .rep-table th, .rep-table td { border:1px solid #000; padding:4px 6px; font-size:12px; }
+}
+@media screen {
+  #report { display:none; }
+  .print-only { display:none; }
+}
