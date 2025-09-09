@@ -5,18 +5,275 @@
   <title>ECSA | GDR — Reporte Diario de Vehículos (RDV)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* =====================================================
+       RDV — Reporte Diario de Vehículos (ECSA / GDR)
+       Hoja de estilos base (oscuro profesional, suave, responsive)
+       ===================================================== */
+
+    /* ---------- Variables y base ---------- */
+    :root{
+      --bg:#0e1116;
+      --surface-0:#111418;
+      --surface-1:#151b22;
+      --surface-2:#1b2330;
+      --stroke:#232b36;
+      --text:#e7ecf3;
+      --muted:#9aa6b2;
+      --brand:#0F3D54;   /* azul petróleo (LSM/ECSA vibe) */
+      --accent:#B3611F;  /* cobre/naranja */
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+
+    *{ box-sizing:border-box }
+    html{ scroll-behavior:smooth }
+    html,body{ height:100% }
+    body{
+      margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      color:var(--text); background:radial-gradient(1200px 800px at 80% -10%, rgba(11,24,36,.55), transparent 60%), linear-gradient(180deg, #0b1118 0%, #0e1116 100%);
+    }
+    img,svg,video{ max-width:100%; display:block }
+    .container{ width:min(1100px,92%); margin-inline:auto }
+
+    /* ---------- Header ---------- */
+    .site-header{
+      position:sticky; top:0; z-index:10; backdrop-filter:saturate(140%) blur(8px);
+      background:linear-gradient(180deg, rgba(17,21,28,.9), rgba(17,21,28,.65));
+      border-bottom:1px solid var(--stroke);
+      padding:12px 0;
+    }
+    .site-header .brand{ 
+      font-weight:800; 
+      letter-spacing:.4px; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .site-header .title-wrap{ display:flex; align-items:center; gap:12px; flex-wrap:wrap }
+    .badge{ 
+      display:inline-flex; 
+      align-items:center; 
+      gap:8px; 
+      padding:6px 10px; 
+      border-radius:999px; 
+      border:1px solid var(--stroke); 
+      background:var(--surface-1); 
+      font-size:.85rem; 
+      color:var(--muted) 
+    }
+    .msg{ margin:10px 0; min-height:20px; padding: 10px; border-radius: 8px; }
+    .msg.success{ background-color: rgba(22, 163, 74, 0.2); border: 1px solid var(--ok); }
+    .msg.error{ background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); }
+    .msg.warn{ background-color: rgba(245, 158, 11, 0.2); border: 1px solid var(--warn); }
+
+    /* ---------- Tarjetas / Secciones ---------- */
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      margin:12px 0; 
+      padding:18px;
+    }
+    .card h2{ margin:6px 0 10px }
+
+    /* ---------- Campos de formulario ---------- */
+    .field{ display:flex; flex-direction:column; gap:8px; margin-bottom: 16px; }
+    .field label{ font-weight:600; color:var(--muted) }
+    .field .hint{ color:var(--muted); font-size:.85rem }
+
+    input[type="text"], input[type="number"], input[type="datetime-local"], input[type="date"], select, textarea{
+      appearance:none; width:100%; padding:12px 14px; border-radius:12px; outline:none;
+      color:var(--text); background:var(--surface-1); border:1px solid var(--stroke);
+      transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+    }
+    textarea{ min-height:110px; resize:vertical }
+    input::placeholder, textarea::placeholder{ color:#728094 }
+
+    input:focus, select:focus, textarea:focus{
+      border-color:color-mix(in srgb, var(--accent) 60%, white 0%);
+      box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+
+    /* selector de archivo */
+    input[type="file"]{
+      padding:10px; border:1px dashed color-mix(in srgb, var(--muted) 60%, transparent);
+      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
+    }
+
+    /* ---------- Botones ---------- */
+    button, .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
+      padding:12px 16px; border-radius:12px; border:1px solid var(--stroke); background:var(--surface-2);
+      color:var(--text); font-weight:600; transition:transform .02s ease, background .2s ease, border-color .2s ease;
+      margin: 5px;
+    }
+    button:hover, .btn:hover{ background:#202a39 }
+    button:active, .btn:active{ transform:translateY(1px) }
+
+    .btn-primary{
+      border-color:color-mix(in srgb, var(--brand) 60%, black 40%);
+      background:linear-gradient(180deg, color-mix(in srgb, var(--brand) 82%, black 0%), color-mix(in srgb, var(--brand) 54%, black 40%));
+    }
+    .btn-primary:hover{ background:linear-gradient(180deg, color-mix(in srgb, var(--brand) 95%, black 0%), color-mix(in srgb, var(--brand) 60%, black 30%)) }
+
+    .btn-accent{ border-color:color-mix(in srgb, var(--accent) 60%, black 40%); background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 85%, black 0%), color-mix(in srgb, var(--accent) 55%, black 35%)) }
+    .btn-ghost{ background:transparent }
+
+    .btn[disabled], button[disabled]{ opacity:.5; cursor:not-allowed }
+
+    /* ---------- Previsualización de fotos ---------- */
+    .photo-preview{ 
+      margin-top:6px; 
+      border:1px solid var(--stroke); 
+      border-radius:12px; 
+      overflow:hidden; 
+      aspect-ratio:4/3; 
+      background:var(--surface-0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+    }
+    .photo-preview img{ width:100%; height:100%; object-fit:cover }
+
+    /* ---------- Grids ---------- */
+    .grid{ display:grid; gap:16px }
+    .grid-2{ grid-template-columns:repeat(2,1fr) }
+    @media (max-width:740px){ .grid-2{ grid-template-columns:1fr } }
+
+    /* ---------- Sistemas ---------- */
+    .sys-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: 10px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+    @media (max-width: 960px) {
+      .sys-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ---------- Controles ---------- */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    /* ---------- Informe ---------- */
+    .report .meta-grid{ 
+      display:grid; 
+      grid-template-columns:repeat(3,1fr); 
+      gap:10px; 
+      margin:8px 0 14px;
+      padding: 15px;
+      background: var(--surface-1);
+      border-radius: 12px;
+    }
+    @media (max-width:740px){ .report .meta-grid{ grid-template-columns:1fr } }
+
+    .tbl-systems{ 
+      width:100%; 
+      border-collapse:separate; 
+      border-spacing:0; 
+      border:1px solid var(--stroke); 
+      border-radius:12px; 
+      overflow:hidden;
+      margin: 15px 0;
+    }
+    .tbl-systems th, .tbl-systems td{ padding:10px 12px; border-bottom:1px solid var(--stroke) }
+    .tbl-systems thead th{ background:var(--surface-2); color:var(--muted); text-align:left }
+
+    .photos{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin: 15px 0 }
+    @media (max-width:740px){ .photos{ grid-template-columns:1fr } }
+    .photos figure{ margin:0 }
+
+    .signatures{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:18px }
+    @media (max-width:740px){ .signatures{ grid-template-columns:1fr } }
+    .sig-line{ height:1px; background:var(--stroke); margin-top:28px }
+
+    .report-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom: 20px; }
+    .report-id .label{ color:var(--muted); font-size:.85rem }
+    .report-id .code{ font-weight:800 }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin: 15px 0;
+      padding: 15px;
+      background: var(--surface-1);
+      border-radius: 12px;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin: 15px 0;
+    }
+    @media (max-width:740px) {
+      .summary, .notes {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ---------- Utilidades ---------- */
+    .req { color: var(--danger); }
+    .help { color: var(--muted); font-size: 0.9rem; margin-bottom: 15px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+    /* ---------- Estados de los mensajes ---------- */
+    .banner{ padding:12px 14px; border-radius:12px; border:1px solid var(--stroke); background:var(--surface-1); display:flex; align-items:center; gap:10px; margin: 10px 0 }
+    .banner.success{ border-color:color-mix(in srgb, var(--ok) 40%, var(--stroke) 60%) }
+    .banner.warn{ border-color:color-mix(in srgb, var(--warn) 40%, var(--stroke) 60%) }
+    .banner.error{ border-color:color-mix(in srgb, var(--danger) 40%, var(--stroke) 60%) }
+
+    /* ---------- Print helpers ---------- */
+    @media print{
+      .site-header, .print-hide{ display:none !important }
+      #reportArea, .print-show{ display:block !important }
+      body{ background:#fff; color:#111 }
+      .card, .banner{ box-shadow:none; border-color:#c9d2de; background:#fff }
+      .tbl-systems{ border-color:#c9d2de }
+      .photo-preview{ border-color:#c9d2de }
+    }
+
+    /* ---------- Radio buttons ---------- */
+    .radios {
+      display: flex;
+      gap: 15px;
+      margin-top: 8px;
+    }
+    .radios label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+  </style>
 </head>
 <body>
   <header class="site-header" role="banner">
-    <div class="brand">
-      <span class="brand-ecsa" aria-label="Empresa ECSA">ECSA</span>
-      <span class="brand-sep">|</span>
-      <span class="brand-gdr" aria-label="Departamento GDR">GDR</span>
-    </div>
-    <div class="title-wrap">
-      <h1>Reporte Diario de Vehículos (RDV)</h1>
-      <div id="codificacionBadge" class="badge" aria-live="polite" title="Codificación del documento">—</div>
+    <div class="container">
+      <div class="brand">
+        <span class="brand-ecsa" aria-label="Empresa ECSA">ECSA</span>
+        <span class="brand-sep">|</span>
+        <span class="brand-gdr" aria-label="Departamento GDR">GDR</span>
+      </div>
+      <div class="title-wrap">
+        <h1>Reporte Diario de Vehículos (RDV)</h1>
+        <div id="codificacionBadge" class="badge" aria-live="polite" title="Codificación del documento">—</div>
+      </div>
     </div>
   </header>
 
@@ -31,7 +288,7 @@
         <!-- Bloque: Datos generales -->
         <fieldset>
           <legend>Datos generales</legend>
-          <div class="grid g2">
+          <div class="grid grid-2">
             <div class="field">
               <label for="codigo_vehiculo">Código del vehículo <span class="req">*</span></label>
               <input id="codigo_vehiculo" name="codigo_vehiculo" type="text" placeholder="ECO62" autocomplete="off" required aria-describedby="a_cod_tip" />
@@ -63,7 +320,7 @@
               <input id="inspector" name="inspector" type="text" placeholder="Ing. Carlos Pérez (GDR)" required />
             </div>
 
-            <div class="field g2-span">
+            <div class="field">
               <label for="ubicacion">Ubicación <span class="req">*</span></label>
               <input id="ubicacion" name="ubicacion" type="text" placeholder="Quito – Patio Norte" required />
             </div>
@@ -73,12 +330,13 @@
         <!-- Bloque: Fotos -->
         <fieldset>
           <legend>Fotos de evidencia (obligatorias)</legend>
-          <div class="grid g2">
+          <div class="grid grid-2">
             <div class="field">
               <label for="foto1">Foto 1 <span class="req">*</span></label>
               <input id="foto1" name="foto1" type="file" accept="image/*" />
               <div class="photo-preview">
                 <img id="preview1" alt="Vista previa Foto 1" />
+                <span id="noPreview1">Sin imagen</span>
               </div>
             </div>
             <div class="field">
@@ -86,6 +344,7 @@
               <input id="foto2" name="foto2" type="file" accept="image/*" />
               <div class="photo-preview">
                 <img id="preview2" alt="Vista previa Foto 2" />
+                <span id="noPreview2">Sin imagen</span>
               </div>
             </div>
           </div>
@@ -180,7 +439,7 @@
         <!-- Bloque: Observaciones y estado general -->
         <fieldset>
           <legend>Resumen y decisión operativa</legend>
-          <div class="grid g2">
+          <div class="grid grid-2">
             <div class="field">
               <label for="estado_general">Estado general <span class="req">*</span></label>
               <select id="estado_general" required>
@@ -199,12 +458,12 @@
               </div>
             </div>
 
-            <div class="field g2-span">
+            <div class="field">
               <label for="observaciones">Observaciones</label>
               <textarea id="observaciones" rows="3" placeholder="Notas relevantes…"></textarea>
             </div>
 
-            <div class="field g2-span">
+            <div class="field">
               <label for="acciones_correctivas">Acciones Correctivas</label>
               <textarea id="acciones_correctivas" rows="3" placeholder="Acciones propuestas o ejecutadas…"></textarea>
             </div>
@@ -216,17 +475,17 @@
           <button type="button" id="btnGuardar">Guardar</button>
           <button type="button" id="btnCargar">Cargar último</button>
           <button type="button" id="btnExport">Exportar JSON</button>
-          <label class="btn-file">
+          <label class="btn btn-primary">
             Importar JSON <input id="importFile" type="file" accept="application/json" hidden />
           </label>
-          <button type="reset" id="btnLimpiar">Limpiar</button>
-          <button type="button" id="btnImprimir" class="primary">Imprimir / PDF</button>
+          <button type="button" id="btnLimpiar">Limpiar</button>
+          <button type="button" id="btnImprimir" class="btn-primary">Imprimir / PDF</button>
         </div>
       </form>
     </section>
 
     <!-- ===================== INFORME OFICIAL ===================== -->
-    <section class="card report" id="reportArea" aria-labelledby="reportTitle">
+    <section class="card report" id="reportArea" aria-labelledby="reportTitle" style="display: none;">
       <h2 id="reportTitle">Informe Oficial — ECSA • Departamento GDR</h2>
 
       <div class="report-header">
@@ -247,7 +506,7 @@
         <div><span>Kilometraje:</span> <strong id="r_km">—</strong></div>
         <div><span>Conductor:</span> <strong id="r_conductor">—</strong></div>
         <div><span>Inspector:</span> <strong id="r_inspector">—</strong></div>
-        <div class="g2-span"><span>Ubicación:</span> <strong id="r_ubicacion">—</strong></div>
+        <div><span>Ubicación:</span> <strong id="r_ubicacion">—</strong></div>
       </div>
 
       <h3>Inspección técnica por sistemas</h3>
@@ -313,6 +572,383 @@
     </section>
   </main>
 
-  <script src="app.js"></script>
+  <script>
+    // ============== RDV ECSA | GDR ==============
+    (() => {
+      'use strict';
+      const $ = s => document.querySelector(s);
+      const $$ = s => Array.from(document.querySelectorAll(s));
+      const byId = id => document.getElementById(id);
+      const fmt2 = n => String(n).padStart(2, "0");
+      const nowLocalISO = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}T${fmt2(d.getHours())}:${fmt2(d.getMinutes())}`;
+      };
+      const toast = (t, type="success") => {
+        const m = byId("msg"); 
+        m.textContent = t; 
+        m.className = `msg ${type}`;
+        setTimeout(()=>{ m.textContent=""; m.className="msg"; }, 3200);
+      };
+
+      const estados = ["", "OK", "Observado", "Crítico"];
+      const sysMap = [
+        ["s_direccion","c_direccion","Sistema de Dirección"],
+        ["s_electrico","c_electrico","Sistema Eléctrico"],
+        ["s_fluidos","c_fluidos","Revisión de Fluidos"],
+        ["s_frenos","c_frenos","Frenos"],
+        ["s_suspension","c_suspension","Suspensión"],
+        ["s_neumaticos","c_neumaticos","Neumáticos"],
+        ["s_iluminacion","c_iluminacion","Iluminación / Señalización"],
+        ["s_instrumentos","c_instrumentos","Instrumentos de tablero"],
+        ["s_motor","c_motor","Motor / Transmisión"],
+        ["s_carroceria","c_carroceria","Carrocería / Vidrios"],
+        ["s_ac","c_ac","A/C / Calefacción"],
+        ["s_seguridad","c_seguridad","Seguridad"],
+        ["s_documentacion","c_documentacion","Documentación"]
+      ];
+      
+      function populateSelects(){
+        sysMap.forEach(([sid]) => {
+          const sel = byId(sid);
+          sel.innerHTML = estados.map(v => v ? `<option>${v}</option>` : `<option value="">Seleccione…</option>`).join("");
+        });
+      }
+
+      let foto1Data="", foto2Data="";
+      const bindPhoto = (fid, pid, noPreviewId, setter) => {
+        const inp = byId(fid), img = byId(pid), noPreview = byId(noPreviewId);
+        inp.required = true;
+        inp.addEventListener("change", e => {
+          const f = e.target.files?.[0]; 
+          if(!f){ 
+            img.style.display = "none";
+            noPreview.style.display = "block";
+            setter(""); 
+            return; 
+          }
+          const r = new FileReader();
+          r.onload = ev => { 
+            const d = String(ev.target.result); 
+            img.src = d; 
+            img.style.display = "block";
+            noPreview.style.display = "none";
+            setter(d); 
+          };
+          r.readAsDataURL(f);
+        });
+      };
+
+      function buildCod(codigo, fecha){
+        if(!fecha) return "";
+        const [Y,M,D] = fecha.split("T")[0].split("-");
+        return `${Y.slice(2)}${M}-RDV-${(codigo||"").toUpperCase().trim()}-${D}`;
+      }
+
+      function collectData(requirePhotos=true){
+        const codigo = byId("codigo_vehiculo").value.trim();
+        const placa = byId("placa").value.trim();
+        const km = byId("kilometraje").value;
+        const fecha = byId("fecha_hora").value || nowLocalISO();
+        const conductor = byId("conductor").value.trim();
+        const inspector = byId("inspector").value.trim();
+        const ubicacion = byId("ubicacion").value.trim();
+        const estado_general = byId("estado_general").value;
+        const apto = ($$('input[name="apto"]:checked')[0]?.value ?? "") === "si";
+
+        if(!codigo || !km || !fecha || !conductor || !inspector || !ubicacion) throw new Error("Faltan campos obligatorios.");
+        if(!estado_general) throw new Error("Seleccione el Estado general.");
+        if($$('input[name="apto"]:checked').length === 0) throw new Error("Indique si es Apto para servicio.");
+        if(requirePhotos && (!foto1Data || !foto2Data)) throw new Error("Debe cargar 2 fotos de evidencia.");
+
+        const sistemas={};
+        sysMap.forEach(([sid,cid,label]) => {
+          sistemas[label] = { estado: byId(sid).value || "", comentarios: byId(cid).value.trim() };
+        });
+
+        const cod = buildCod(codigo, fecha);
+        return {
+          version:"1.0.0",
+          codificacion: cod,
+          metadata:{ codigo_vehiculo: codigo, placa: placa || undefined, kilometraje:Number(km), fecha_hora:fecha, conductor, inspector, ubicacion },
+          estado_general,
+          apto_servicio: apto,
+          observaciones: byId("observaciones").value.trim(),
+          acciones_correctivas: byId("acciones_correctivas").value.trim(),
+          sistemas,
+          fotos:[ {data_url: foto1Data||"", nombre_archivo:"foto1"}, {data_url: foto2Data||"", nombre_archivo:"foto2"} ],
+          emision:{}
+        };
+      }
+
+      function renderReport(d){
+        byId("r_codificacion").textContent = d.codificacion||"—";
+        byId("r_folio").textContent = d.codificacion||"—";
+        byId("codificacionBadge").textContent = d.codificacion||"—";
+        byId("r_codigo").textContent = d.metadata.codigo_vehiculo||"—";
+        byId("r_placa").textContent = d.metadata.placa||"—";
+        byId("r_fecha").textContent = d.metadata.fecha_hora||"—";
+        byId("r_km").textContent = d.metadata.kilometraje??"—";
+        byId("r_conductor").textContent = d.metadata.conductor||"—";
+        byId("r_inspector").textContent = d.metadata.inspector||"—";
+        byId("r_conductor_sig").textContent = d.metadata.conductor||"—";
+        byId("r_inspector_sig").textContent = d.metadata.inspector||"—";
+        byId("r_ubicacion").textContent = d.metadata.ubicacion||"—";
+        byId("r_estado_general").textContent = d.estado_general||"—";
+        byId("r_apto").textContent = d.apto_servicio ? "Sí" : "No";
+        byId("r_obs").textContent = d.observaciones||"—";
+        byId("r_acc").textContent = d.acciones_correctivas||"—";
+
+        const tb = byId("r_tbl_body");
+        tb.innerHTML = "";
+        Object.entries(d.sistemas).forEach(([nombre, obj]) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${nombre}</td><td>${obj.estado||"—"}</td><td>${obj.comentarios||""}</td>`;
+          tb.appendChild(tr);
+        });
+        
+        if(d.fotos?.[0]?.data_url) {
+          byId("r_foto1").src = d.fotos[0].data_url;
+          byId("r_foto1").style.display = "block";
+        } else {
+          byId("r_foto1").style.display = "none";
+        }
+        
+        if(d.fotos?.[1]?.data_url) {
+          byId("r_foto2").src = d.fotos[1].data_url;
+          byId("r_foto2").style.display = "block";
+        } else {
+          byId("r_foto2").style.display = "none";
+        }
+        
+        const t = new Date(); 
+        byId("r_emitido").textContent = `${t.getFullYear()}-${fmt2(t.getMonth()+1)}-${fmt2(t.getDate())} ${fmt2(t.getHours())}:${fmt2(t.getMinutes())}`;
+        
+        // Mostrar el área de reporte
+        byId("reportArea").style.display = "block";
+      }
+
+      const KEY = "RDV_LAST_V1";
+      const saveLocal = d => localStorage.setItem(KEY, JSON.stringify(d));
+      const loadLocal = () => { try{ return JSON.parse(localStorage.getItem(KEY)||"null"); }catch{ return null; } };
+
+      function populateForm(d){
+        if(!d) return;
+        byId("codigo_vehiculo").value = d.metadata.codigo_vehiculo??"";
+        byId("placa").value = d.metadata.placa??"";
+        byId("kilometraje").value = d.metadata.kilometraje??"";
+        byId("fecha_hora").value = d.metadata.fecha_hora??nowLocalISO();
+        byId("conductor").value = d.metadata.conductor??"";
+        byId("inspector").value = d.metadata.inspector??"";
+        byId("ubicacion").value = d.metadata.ubicacion??"";
+        byId("estado_general").value = d.estado_general??"";
+        $$('input[name="apto"]').forEach(r => r.checked = (d.apto_servicio ? r.value==="si" : r.value==="no"));
+        sysMap.forEach(([sid,cid,label]) => {
+          const s = d.sistemas?.[label]; if(s){ byId(sid).value = s.estado||""; byId(cid).value = s.comentarios||""; }
+        });
+        byId("observaciones").value = d.observaciones||"";
+        byId("acciones_correctivas").value = d.acciones_correctivas||"";
+        
+        foto1Data = d.fotos?.[0]?.data_url||""; 
+        foto2Data = d.fotos?.[1]?.data_url||"";
+        
+        if(foto1Data) {
+          byId("preview1").src = foto1Data; 
+          byId("preview1").style.display = "block";
+          byId("noPreview1").style.display = "none";
+        } else {
+          byId("preview1").style.display = "none";
+          byId("noPreview1").style.display = "block";
+        }
+        
+        if(foto2Data) {
+          byId("preview2").src = foto2Data; 
+          byId("preview2").style.display = "block";
+          byId("noPreview2").style.display = "none";
+        } else {
+          byId("preview2").style.display = "none";
+          byId("noPreview2").style.display = "block";
+        }
+        
+        byId("codificacionBadge").textContent = d.codificacion||"—";
+      }
+
+      function exportJSON(d){
+        const fname = (d.codificacion||"RDV") + ".json";
+        const blob = new Blob([JSON.stringify(d,null,2)],{type:"application/json"});
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fname; a.click(); URL.revokeObjectURL(a.href);
+      }
+
+      // --------- Función mejorada para impresión ---------
+      function printInNewWindow(){
+        const reportHTML = byId("reportArea").innerHTML;
+        const win = window.open("", "_blank", "noopener,width=1000,height=700");
+        
+        if(!win){ 
+          toast("El navegador bloqueó la ventana. Habilita emergentes para este sitio.", "warn"); 
+          
+          // Alternativa: mostrar el reporte en la misma página para imprimir manualmente
+          byId("reportArea").style.display = "block";
+          window.scrollTo(0, byId("reportArea").offsetTop);
+          
+          toast("Mostrando vista de impresión en la página. Use Ctrl+P para imprimir.", "warn");
+          return;
+        }
+        
+        win.document.open();
+        win.document.write(`<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Informe RDV — ECSA | GDR</title>
+<style>
+  body{ background:#fff !important; color:#111 !important; font-family: Arial, sans-serif; padding: 20px; }
+  .card{ box-shadow:none; border: 1px solid #c9d2de; background:#fff; border-radius: 16px; padding: 18px; }
+  .report-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom: 20px; }
+  .meta-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:8px 0 14px; padding: 15px; background: #f5f5f5; border-radius: 12px; }
+  .tbl-systems{ width:100%; border-collapse:collapse; border:1px solid #c9d2de; border-radius:12px; overflow:hidden; margin: 15px 0; }
+  .tbl-systems th, .tbl-systems td{ padding:10px 12px; border-bottom:1px solid #c9d2de }
+  .tbl-systems thead th{ background:#eaeaea; color:#555; text-align:left }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 12px; }
+  .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0; }
+  .photos{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin: 15px 0 }
+  .photos img { max-width: 100%; height: auto; border: 1px solid #ddd; }
+  .signatures{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:18px }
+  .sig-line{ height:1px; background:#c9d2de; margin-top:28px }
+  @media print {
+    body { margin: 0; padding: 0; }
+    .card { border: none; box-shadow: none; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<section class="card report">
+${reportHTML}
+</section>
+<script>
+  window.addEventListener('load', ()=>{ 
+    setTimeout(()=>{ 
+      try {
+        window.print(); 
+        setTimeout(() => { window.close(); }, 500);
+      } catch(e) {
+        console.error("Error al imprimir:", e);
+        document.body.innerHTML += '<p style="color:red; padding:20px;">Error al imprimir. Use Ctrl+P manualmente.</p>';
+      }
+    }, 150); 
+  });
+<\/script>
+</body></html>`);
+        win.document.close();
+      }
+
+      async function doPrint(){
+        let data;
+        try{ 
+          data = collectData(true); 
+        } catch(e){ 
+          toast(e.message, "error"); 
+          return; 
+        }
+        
+        saveLocal(data);
+        renderReport(data);
+        
+        // Pequeña pausa para asegurar que el DOM se actualice
+        setTimeout(() => {
+          try {
+            // Primero intentamos imprimir directamente
+            window.print();
+            toast("Abriendo diálogo de impresión…");
+            
+            // Como respaldo, también abrimos la ventana emergente después de un breve retraso
+            setTimeout(() => {
+              try {
+                printInNewWindow();
+              } catch (e) {
+                console.error("Error en impresión:", e);
+                toast("Error al intentar imprimir. Use Ctrl+P manualmente.", "error");
+              }
+            }, 1000);
+          } catch (e) {
+            // Si falla la impresión directa, usamos la ventana emergente
+            printInNewWindow();
+          }
+        }, 100);
+      }
+
+      function bindEvents(){
+        if(!byId("fecha_hora").value) byId("fecha_hora").value = nowLocalISO();
+        bindPhoto("foto1","preview1", "noPreview1", v => foto1Data = v);
+        bindPhoto("foto2","preview2", "noPreview2", v => foto2Data = v);
+        
+        byId("btnImprimir").addEventListener("click", doPrint);
+        byId("btnGuardar").addEventListener("click", ()=>{ 
+          try{ 
+            const d = collectData(true); 
+            saveLocal(d); 
+            toast("Datos guardados localmente."); 
+          } catch(e){ 
+            toast(e.message,"error"); 
+          } 
+        });
+        byId("btnCargar").addEventListener("click", ()=>{ 
+          const d = loadLocal(); 
+          if(!d){ 
+            toast("No hay un reporte previo guardado.","warn"); 
+            return; 
+          } 
+          populateForm(d); 
+          toast("Datos cargados."); 
+        });
+        byId("btnExport").addEventListener("click", ()=>{ 
+          try{ 
+            exportJSON(collectData(true)); 
+          } catch(e){ 
+            toast(e.message,"error"); 
+          } 
+        });
+        byId("btnLimpiar").addEventListener("click", () => {
+          if(confirm("¿Está seguro de que desea limpiar el formulario? Se perderán todos los datos no guardados.")) {
+            document.getElementById("rdvForm").reset();
+            foto1Data = "";
+            foto2Data = "";
+            byId("preview1").style.display = "none";
+            byId("noPreview1").style.display = "block";
+            byId("preview2").style.display = "none";
+            byId("noPreview2").style.display = "block";
+            byId("codificacionBadge").textContent = "—";
+            byId("reportArea").style.display = "none";
+            toast("Formulario limpiado.");
+          }
+        });
+        byId("importFile").addEventListener("change", async e => {
+          const f = e.target.files?.[0]; if(!f) return;
+          try{ 
+            const txt = await f.text(); 
+            const d = JSON.parse(txt); 
+            populateForm(d); 
+            saveLocal(d); 
+            renderReport(d); 
+            toast("JSON importado."); 
+          } catch(e){ 
+            console.error("Error importing JSON:", e);
+            toast("Archivo inválido.", "error"); 
+          }
+          e.target.value = "";
+        });
+        const updateCod = () => byId("codificacionBadge").textContent = buildCod(byId("codigo_vehiculo").value, byId("fecha_hora").value) || "—";
+        byId("codigo_vehiculo").addEventListener("input", updateCod);
+        byId("fecha_hora").addEventListener("change", updateCod);
+        updateCod();
+      }
+
+      document.addEventListener("DOMContentLoaded", ()=>{ 
+        populateSelects(); 
+        bindEvents(); 
+        // Ocultar el área de reporte inicialmente
+        byId("reportArea").style.display = "none";
+      });
+    })();
+  </script>
 </body>
 </html>
