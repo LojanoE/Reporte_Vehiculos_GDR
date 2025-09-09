@@ -14,9 +14,9 @@ const showToast = (msg) => {
 };
 
 const SYSTEMS = [
-  'Motor','Transmisión / Tracción','Dirección','Frenos','Suspensión',
+  'Motor','Sistema de transmisión','Sistema de Tracción','Sistema de Dirección','Frenos','Suspensión',
   'Neumáticos','Iluminación delantera','Iluminación posterior','Líquido de frenos','Nivel de aceite motor', 'Refrigerante',
-  'Carrocería','Extintor','Triángulos','Aire Acondicionado','Ventilación','Limpieza exterior','Limpieza interior','Otros'
+  'Carrocería','Extintor','Triángulos','Aire Acondicionado','Ventilación','Limpieza exterior','Limpieza interior','Mantenimientos','Otros'
 ];
 const STATUS_OPTS = [
   {v:'OK', t:'OK'},
