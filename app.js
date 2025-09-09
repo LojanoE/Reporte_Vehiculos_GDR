@@ -1,4 +1,3 @@
-
 // ============== RDV ECSA | GDR ==============
 (() => {
   'use strict';
@@ -152,12 +151,36 @@
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fname; a.click(); URL.revokeObjectURL(a.href);
   }
 
-  // --------- NUEVO: Imprimir en ventana aparte (compatibilidad Edge/Pages) ---------
+  // --------- Función mejorada para impresión ---------
   function printInNewWindow(){
     const reportHTML = byId("reportArea").innerHTML;
     const cssHref = "styles.css";
-    const win = window.open("", "_blank", "noopener");
-    if(!win){ toast("El navegador bloqueó la ventana. Habilita emergentes para este sitio.", "warn"); return; }
+    const win = window.open("", "_blank", "noopener,width=1000,height=700");
+    
+    if(!win){ 
+      toast("El navegador bloqueó la ventana. Habilita emergentes para este sitio.", "warn"); 
+      
+      // Alternativa: mostrar el reporte en la misma página para imprimir manualmente
+      const printSection = document.createElement("div");
+      printSection.innerHTML = reportHTML;
+      printSection.className = "print-section";
+      printSection.style.cssText = "position:absolute; top:0; left:0; width:100%; background:white; color:black; z-index:10000; padding:20px;";
+      
+      const closeBtn = document.createElement("button");
+      closeBtn.textContent = "Cerrar vista de impresión";
+      closeBtn.style.cssText = "position:fixed; top:10px; right:10px; z-index:10001; padding:10px; background:#f0f0f0; border:1px solid #ccc;";
+      closeBtn.onclick = () => {
+        document.body.removeChild(printSection);
+        document.body.removeChild(closeBtn);
+      };
+      
+      document.body.appendChild(printSection);
+      document.body.appendChild(closeBtn);
+      
+      toast("Mostrando vista de impresión en la página. Use Ctrl+P para imprimir.", "warn");
+      return;
+    }
+    
     win.document.open();
     win.document.write(`<!DOCTYPE html>
 <html lang="es"><head>
@@ -168,6 +191,10 @@
   body{ background:#fff !important; color:#111 !important; }
   .card{ box-shadow:none; border-color:#c9d2de; background:#fff }
   .print-show{ display:block !important }
+  @media print {
+    body { margin: 0; padding: 0; }
+    .card { border: none; box-shadow: none; }
+  }
 </style>
 </head>
 <body>
@@ -175,7 +202,17 @@
 ${reportHTML}
 </section>
 <script>
-  window.addEventListener('load', ()=>{ setTimeout(()=>{ window.print(); }, 150); });
+  window.addEventListener('load', ()=>{ 
+    setTimeout(()=>{ 
+      try {
+        window.print(); 
+        setTimeout(() => { window.close(); }, 500);
+      } catch(e) {
+        console.error("Error al imprimir:", e);
+        document.body.innerHTML += '<p style="color:red; padding:20px;">Error al imprimir. Use Ctrl+P manualmente.</p>';
+      }
+    }, 150); 
+  });
 <\/script>
 </body></html>`);
     win.document.close();
@@ -183,18 +220,39 @@ ${reportHTML}
 
   async function doPrint(){
     let data;
-    try{ data = collectData(true); }
-    catch(e){ toast(e.message, "error"); return; }
+    try{ 
+      data = collectData(true); 
+    } catch(e){ 
+      toast(e.message, "error"); 
+      return; 
+    }
+    
     saveLocal(data);
     renderReport(data);
-    // Intento directo
-    try{
-      window.focus();
-      setTimeout(()=>window.print(), 80);
-      // Además, abre la ventana de compatibilidad (varios Edge/Pages no muestran print directo)
-      setTimeout(()=>printInNewWindow(), 400);
-    }catch{ printInNewWindow(); }
-    toast("Abriendo diálogo de impresión…");
+    
+    // Pequeña pausa para asegurar que el DOM se actualice
+    setTimeout(() => {
+      try {
+        // Primero intentamos imprimir directamente
+        window.print();
+        toast("Abriendo diálogo de impresión…");
+        
+        // Como respaldo, también abrimos la ventana emergente después de un breve retraso
+        setTimeout(() => {
+          try {
+            // Verificamos si la impresión fue bloqueada
+            if (!window.matchMedia || !window.matchMedia('print').matches) {
+              printInNewWindow();
+            }
+          } catch (e) {
+            printInNewWindow();
+          }
+        }, 1000);
+      } catch (e) {
+        // Si falla la impresión directa, usamos la ventana emergente
+        printInNewWindow();
+      }
+    }, 100);
   }
 
   function bindEvents(){
@@ -205,6 +263,17 @@ ${reportHTML}
     byId("btnGuardar").addEventListener("click", ()=>{ try{ const d = collectData(true); saveLocal(d); toast("Datos guardados localmente."); }catch(e){ toast(e.message,"error"); } });
     byId("btnCargar").addEventListener("click", ()=>{ const d = loadLocal(); if(!d){ toast("No hay un reporte previo guardado.","warn"); return; } populateForm(d); toast("Datos cargados."); });
     byId("btnExport").addEventListener("click", ()=>{ try{ exportJSON(collectData(true)); }catch(e){ toast(e.message,"error"); } });
+    byId("btnLimpiar").addEventListener("click", () => {
+      if(confirm("¿Está seguro de que desea limpiar el formulario? Se perderán todos los datos no guardados.")) {
+        document.getElementById("rdvForm").reset();
+        foto1Data = "";
+        foto2Data = "";
+        byId("preview1").removeAttribute("src");
+        byId("preview2").removeAttribute("src");
+        byId("codificacionBadge").textContent = "—";
+        toast("Formulario limpiado.");
+      }
+    });
     byId("importFile").addEventListener("change", async e => {
       const f = e.target.files?.[0]; if(!f) return;
       try{ const txt = await f.text(); const d = JSON.parse(txt); populateForm(d); saveLocal(d); renderReport(d); toast("JSON importado."); }
