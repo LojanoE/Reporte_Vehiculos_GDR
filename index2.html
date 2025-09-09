@@ -1,318 +1,478 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>ECSA | GDR — Reporte Diario de Vehículos (RDV)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light dark" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RDV — GDR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --ink:#0f172a; --muted:#334155; --brand:#0ea5e9; --ok:#16a34a; --warn:#f59e0b; --crit:#ef4444; }
+    html, body { background:#0b1220; color:#e5e7eb; }
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.08); border-radius: 1rem; }
+    .chip { border:1px solid rgba(255,255,255,.12); border-radius:9999px; padding:.15rem .6rem; font-size:.75rem; }
+    .soft { box-shadow: 0 10px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06); }
+    .grid-2 { display:grid; grid-template-columns: 1fr; gap:1rem; }
+    @media(min-width:768px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
+    .sys-select { appearance:none; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:.5rem; padding:.4rem .6rem; width:100%; }
+    .sys-note { background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.15); border-radius:.5rem; padding:.4rem .6rem; width:100%; }
+    .thumb { aspect-ratio: 4/3; object-fit:cover; border-radius:.75rem; border:1px solid rgba(255,255,255,.12); background:#0a1020; }
+    .btn { border-radius: .75rem; padding: .7rem 1rem; border:1px solid rgba(255,255,255,.16); }
+    .btn-primary { background:linear-gradient(180deg, #22d3ee, #0ea5e9); color:#0b1220; font-weight:600; }
+    .btn-ghost { background:transparent; }
+    .btn-danger { background:linear-gradient(180deg, #fb7185, #ef4444); color:#fff; }
+    .kpi { border: 1px solid rgba(255,255,255,.12); border-radius:.75rem; padding:.4rem .6rem; }
+    .kbd { border:1px solid rgba(255,255,255,.2); border-radius:.4rem; padding:.1rem .35rem; font-size:.75rem; }
+    .note { color:#cbd5e1; font-size:.85rem; }
+    .sr-only { position:absolute; width:1px; height:1px; margin:-1px; clip:rect(0,0,0,0); overflow:hidden; }
+    /* ======= PRINT (A4) ======= */
+    @page { size: A4; margin: 12mm; }
+    @media print {
+      body { background:#fff; color:#000; }
+      .no-print { display:none !important; }
+      #report { display:block !important; }
+      .print-only { display:block !important; }
+      header, footer { break-inside: avoid; }
+      .print-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+      .print-grid img { width:100%; height: 110mm; object-fit: contain; border:1px solid #999; }
+      .rep-card { border:1px solid #000; border-radius: 6px; padding:10px; }
+      .rep-table { width:100%; border-collapse: collapse; }
+      .rep-table th, .rep-table td { border:1px solid #000; padding:4px 6px; font-size:12px; }
+    }
+    @media screen {
+      #report { display:none; }
+      .print-only { display:none; }
+    }
+  </style>
 </head>
 <body>
-  <header class="site-header" role="banner">
-    <div class="brand">
-      <span class="brand-ecsa" aria-label="Empresa ECSA">ECSA</span>
-      <span class="brand-sep">|</span>
-      <span class="brand-gdr" aria-label="Departamento GDR">GDR</span>
-    </div>
-    <div class="title-wrap">
-      <h1>Reporte Diario de Vehículos (RDV)</h1>
-      <div id="codificacionBadge" class="badge" aria-live="polite" title="Codificación del documento">—</div>
-    </div>
-  </header>
+  <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Reporte Diario de Vehículos <span class="opacity-70">(RDV)</span></h1>
+        <p class="text-sm text-slate-300">ECSA • Departamento GDR — Formulario web (HTML/CSS/JS) listo para GitHub Pages</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="chip">v1.0</span>
+        <span class="chip">Modo oscuro</span>
+        <span class="chip">Imprime a PDF</span>
+      </div>
+    </header>
 
-  <main class="container" id="main">
-    <!-- ===================== FORMULARIO RDV ===================== -->
-    <section class="card" id="formArea" aria-labelledby="formTitle">
-      <h2 id="formTitle">Formulario RDV — Ingreso de datos</h2>
-      <p class="help">Complete todos los campos <span class="req">*</span> obligatorios. Adjunte <strong>dos fotos</strong> del estado del vehículo.</p>
-      <div id="msg" class="msg" role="alert" aria-live="polite"></div>
-
-      <form id="rdvForm" novalidate>
-        <!-- Bloque: Datos generales -->
-        <fieldset>
-          <legend>Datos generales</legend>
-          <div class="grid g2">
-            <div class="field">
-              <label for="codigo_vehiculo">Código del vehículo <span class="req">*</span></label>
-              <input id="codigo_vehiculo" name="codigo_vehiculo" type="text" placeholder="ECO62" autocomplete="off" required aria-describedby="a_cod_tip" />
-              <small id="a_cod_tip" class="hint">Use el código interno (ej.: ECO62). Se usa en la codificación del documento.</small>
-            </div>
-
-            <div class="field">
-              <label for="placa">Placa (opcional)</label>
-              <input id="placa" name="placa" type="text" placeholder="PQR-1234" autocomplete="off" />
-            </div>
-
-            <div class="field">
-              <label for="kilometraje">Kilometraje actual <span class="req">*</span></label>
-              <input id="kilometraje" name="kilometraje" type="number" min="0" step="1" placeholder="126540" required />
-            </div>
-
-            <div class="field">
-              <label for="fecha_hora">Fecha y hora de la revisión <span class="req">*</span></label>
-              <input id="fecha_hora" name="fecha_hora" type="datetime-local" required />
-            </div>
-
-            <div class="field">
-              <label for="conductor">Conductor responsable <span class="req">*</span></label>
-              <input id="conductor" name="conductor" type="text" placeholder="María López" required />
-            </div>
-
-            <div class="field">
-              <label for="inspector">Inspector / Gestor GDR <span class="req">*</span></label>
-              <input id="inspector" name="inspector" type="text" placeholder="Ing. Carlos Pérez (GDR)" required />
-            </div>
-
-            <div class="field g2-span">
-              <label for="ubicacion">Ubicación <span class="req">*</span></label>
-              <input id="ubicacion" name="ubicacion" type="text" placeholder="Quito – Patio Norte" required />
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Bloque: Fotos -->
-        <fieldset>
-          <legend>Fotos de evidencia (obligatorias)</legend>
-          <div class="grid g2">
-            <div class="field">
-              <label for="foto1">Foto 1 <span class="req">*</span></label>
-              <input id="foto1" name="foto1" type="file" accept="image/*" />
-              <div class="photo-preview">
-                <img id="preview1" alt="Vista previa Foto 1" />
-              </div>
-            </div>
-            <div class="field">
-              <label for="foto2">Foto 2 <span class="req">*</span></label>
-              <input id="foto2" name="foto2" type="file" accept="image/*" />
-              <div class="photo-preview">
-                <img id="preview2" alt="Vista previa Foto 2" />
-              </div>
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Bloque: Secciones técnicas -->
-        <fieldset>
-          <legend>Inspección de sistemas (estado y comentarios)</legend>
-
-          <div class="systems">
-            <!-- Cada fila: etiqueta + select estado + comentarios -->
-            <div class="sys-row">
-              <label> Sistema de Dirección </label>
-              <select id="s_direccion" aria-label="Estado Sistema de Dirección"></select>
-              <input id="c_direccion" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Sistema Eléctrico </label>
-              <select id="s_electrico" aria-label="Estado Sistema Eléctrico"></select>
-              <input id="c_electrico" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Revisión de Fluidos </label>
-              <select id="s_fluidos" aria-label="Estado Revisión de Fluidos"></select>
-              <input id="c_fluidos" type="text" placeholder="Aceite, refrigerante, frenos, dirección, limpiaparabrisas..." />
-            </div>
-
-            <div class="sys-row">
-              <label> Frenos (delantero/trasero) </label>
-              <select id="s_frenos" aria-label="Estado Frenos"></select>
-              <input id="c_frenos" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Suspensión </label>
-              <select id="s_suspension" aria-label="Estado Suspensión"></select>
-              <input id="c_suspension" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Neumáticos (presión/desgaste) </label>
-              <select id="s_neumaticos" aria-label="Estado Neumáticos"></select>
-              <input id="c_neumaticos" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Iluminación / Señalización </label>
-              <select id="s_iluminacion" aria-label="Estado Iluminación / Señalización"></select>
-              <input id="c_iluminacion" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Instrumentos de tablero </label>
-              <select id="s_instrumentos" aria-label="Estado Instrumentos de tablero"></select>
-              <input id="c_instrumentos" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Motor / Transmisión </label>
-              <select id="s_motor" aria-label="Estado Motor / Transmisión"></select>
-              <input id="c_motor" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Carrocería / Vidrios </label>
-              <select id="s_carroceria" aria-label="Estado Carrocería / Vidrios"></select>
-              <input id="c_carroceria" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> A/C / Calefacción </label>
-              <select id="s_ac" aria-label="Estado A/C / Calefacción"></select>
-              <input id="c_ac" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Seguridad (extintor, triángulos, botiquín) </label>
-              <select id="s_seguridad" aria-label="Estado Seguridad"></select>
-              <input id="c_seguridad" type="text" placeholder="Comentarios" />
-            </div>
-
-            <div class="sys-row">
-              <label> Documentación (SOAT, matrícula, revisión) </label>
-              <select id="s_documentacion" aria-label="Estado Documentación"></select>
-              <input id="c_documentacion" type="text" placeholder="Comentarios" />
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Bloque: Observaciones y estado general -->
-        <fieldset>
-          <legend>Resumen y decisión operativa</legend>
-          <div class="grid g2">
-            <div class="field">
-              <label for="estado_general">Estado general <span class="req">*</span></label>
-              <select id="estado_general" required>
-                <option value="">Seleccione…</option>
-                <option>OK</option>
-                <option>Observado</option>
-                <option>Crítico</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <span class="label">¿Apto para servicio? <span class="req">*</span></span>
-              <div class="radios" role="radiogroup" aria-label="Apto para servicio">
-                <label><input type="radio" name="apto" value="si"> Sí</label>
-                <label><input type="radio" name="apto" value="no"> No</label>
-              </div>
-            </div>
-
-            <div class="field g2-span">
-              <label for="observaciones">Observaciones</label>
-              <textarea id="observaciones" rows="3" placeholder="Notas relevantes…"></textarea>
-            </div>
-
-            <div class="field g2-span">
-              <label for="acciones_correctivas">Acciones Correctivas</label>
-              <textarea id="acciones_correctivas" rows="3" placeholder="Acciones propuestas o ejecutadas…"></textarea>
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Controles -->
-        <div class="actions" id="controls">
-          <button type="button" id="btnGuardar">Guardar</button>
-          <button type="button" id="btnCargar">Cargar último</button>
-          <button type="button" id="btnExport">Exportar JSON</button>
-          <label class="btn-file">
-            Importar JSON <input id="importFile" type="file" accept="application/json" hidden />
-          </label>
-          <button type="reset" id="btnLimpiar">Limpiar</button>
-          <button type="button" id="btnImprimir" class="primary">Imprimir / PDF</button>
-        </div>
-      </form>
+    <section class="card soft p-4 md:p-6 space-y-4">
+      <div class="grid md:grid-cols-3 gap-3">
+        <div class="kpi"><span class="text-slate-400 text-xs">Código del Informe</span><div id="liveCodigo" class="font-mono text-lg">—</div></div>
+        <div class="kpi"><span class="text-slate-400 text-xs">Estado</span><div id="liveEstado" class="font-semibold">Pendiente</div></div>
+        <div class="kpi"><span class="text-slate-400 text-xs">Último guardado</span><div id="liveSaved" class="text-sm">—</div></div>
+      </div>
+      <p class="note">El código del documento sigue el formato: <span class="font-mono bg-black/30 px-2 py-0.5 rounded">AñoMes-RDV-CODVEHICULO-Día</span>, por ejemplo: <span class="font-mono">2509-RDV-ECO62-09</span>. Al imprimir/guardar PDF se usará automáticamente este código como título.</p>
     </section>
 
-    <!-- ===================== INFORME OFICIAL ===================== -->
-    <section class="card report" id="reportArea" aria-labelledby="reportTitle">
-      <h2 id="reportTitle">Informe Oficial — ECSA • Departamento GDR</h2>
-
-      <div class="report-header">
-        <div class="report-id">
-          <div class="label">Codificación</div>
-          <div class="code" id="r_codificacion">—</div>
+    <!-- ====== FORM ====== -->
+    <form id="rdvForm" class="card soft p-4 md:p-6 space-y-6 no-print">
+      <h2 class="text-xl font-semibold">1) Datos generales</h2>
+      <div class="grid-2">
+        <div class="space-y-3">
+          <label class="block text-sm">Código del vehículo <span class="text-red-400">*</span>
+            <input id="cod" required maxlength="25" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="ECO62, CAM-01, etc.">
+          </label>
+          <label class="block text-sm">Placa <span class="text-red-400">*</span>
+            <input id="placa" required maxlength="20" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="ABC-1234">
+          </label>
+          <label class="block text-sm">Kilometraje actual <span class="text-red-400">*</span>
+            <input id="km" type="number" min="0" step="1" required class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="123456">
+          </label>
         </div>
-        <div class="report-meta">
-          <div><strong>Documento:</strong> Reporte Diario de Vehículos (RDV)</div>
-          <div><strong>Uso:</strong> Interno — ECSA | GDR</div>
+        <div class="space-y-3">
+          <label class="block text-sm">Fecha y hora de la revisión <span class="text-red-400">*</span>
+            <input id="fecha" type="datetime-local" required class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+          </label>
+          <label class="block text-sm">Conductor responsable
+            <input id="conductor" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Nombre completo">
+          </label>
+          <label class="block text-sm">Inspector / Gestor GDR
+            <input id="inspector" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Nombre completo">
+          </label>
+          <label class="block text-sm">Ubicación
+            <input id="ubicacion" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Ciudad / Frente / Taller">
+          </label>
         </div>
       </div>
 
-      <div class="meta-grid">
-        <div><span>Código Vehículo:</span> <strong id="r_codigo">—</strong></div>
-        <div><span>Placa:</span> <strong id="r_placa">—</strong></div>
-        <div><span>Fecha/Hora:</span> <strong id="r_fecha">—</strong></div>
-        <div><span>Kilometraje:</span> <strong id="r_km">—</strong></div>
-        <div><span>Conductor:</span> <strong id="r_conductor">—</strong></div>
-        <div><span>Inspector:</span> <strong id="r_inspector">—</strong></div>
-        <div class="g2-span"><span>Ubicación:</span> <strong id="r_ubicacion">—</strong></div>
+      <h2 class="text-xl font-semibold">2) Evaluación de sistemas</h2>
+      <p class="note">Marca el estado de cada sistema. Si seleccionas <span class="text-yellow-400 font-semibold">Atención</span> o <span class="text-red-400 font-semibold">Crítico</span>, agrega una observación.</p>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm border border-white/10 rounded-lg overflow-hidden">
+          <thead class="bg-white/10">
+            <tr>
+              <th class="text-left p-2">Sistema</th>
+              <th class="text-left p-2">Estado</th>
+              <th class="text-left p-2">Observación (opcional)</th>
+            </tr>
+          </thead>
+          <tbody id="sysTableBody" class="divide-y divide-white/10">
+            <!-- rows injected by JS -->
+          </tbody>
+        </table>
       </div>
 
-      <h3>Inspección técnica por sistemas</h3>
-      <table class="tbl-systems" aria-describedby="tblDesc">
-        <caption id="tblDesc" class="sr-only">Tabla con estados {OK, Observado, Crítico} y comentarios.</caption>
-        <thead>
+      <div class="grid-2">
+        <fieldset class="space-y-2">
+          <legend class="text-sm font-semibold">Dictamen general</legend>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="apto" id="aptoSi" value="SI" class="accent-emerald-400" checked>
+            <span class="text-emerald-400 font-semibold">APTO para circular</span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="apto" id="aptoNo" value="NO" class="accent-rose-500">
+            <span class="text-rose-400 font-semibold">NO APTO</span>
+          </label>
+        </fieldset>
+
+        <div class="space-y-2">
+          <label class="block text-sm">Observaciones generales</label>
+          <textarea id="obsGeneral" rows="3" class="w-full bg-black/30 border border-white/15 rounded-lg p-3" placeholder="Notas adicionales, recomendaciones, repuestos requeridos, etc."></textarea>
+        </div>
+      </div>
+
+      <h2 class="text-xl font-semibold">3) Evidencia fotográfica (obligatoria)</h2>
+      <div class="grid-2">
+        <label class="block text-sm">Foto 1 <span class="text-red-400">*</span>
+          <input id="foto1" type="file" accept="image/*" capture="environment" required class="mt-1 block w-full file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500">
+          <img id="prev1" class="thumb mt-2 hidden" alt="Vista previa 1">
+        </label>
+        <label class="block text-sm">Foto 2 <span class="text-red-400">*</span>
+          <input id="foto2" type="file" accept="image/*" capture="environment" required class="mt-1 block w-full file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500">
+          <img id="prev2" class="thumb mt-2 hidden" alt="Vista previa 2">
+        </label>
+      </div>
+
+      <div class="flex flex-wrap gap-2 pt-2">
+        <button id="btnGenerar" type="button" class="btn btn-primary">Generar informe</button>
+        <button id="btnImprimir" type="button" class="btn btn-ghost border-white/20 disabled:opacity-50" disabled>Imprimir / Guardar PDF <span class="kbd ml-1">Ctrl/Cmd+P</span></button>
+        <button id="btnLimpiar" type="button" class="btn btn-danger">Limpiar</button>
+      </div>
+      <p class="note">Sugerencia: después de generar el informe, presiona el botón “Imprimir / Guardar PDF”. Tu navegador usará el <span class="font-mono">código RDV</span> como nombre sugerido del archivo.</p>
+    </form>
+
+    <!-- ====== PRINTABLE REPORT (A4) ====== -->
+    <section id="report" class="print-only">
+      <header style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+        <div>
+          <div style="font-weight:700; font-size:20px;">ECSA — Departamento GDR</div>
+          <div style="font-size:12px;">Reporte Diario de Vehículos (RDV)</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px;">Código</div>
+          <div id="rep-codigo" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace; font-size:16px; font-weight:700;">—</div>
+        </div>
+      </header>
+
+      <div class="rep-card" style="margin-bottom:8px;">
+        <table class="rep-table">
           <tr>
-            <th>Sistema</th>
-            <th>Estado</th>
-            <th>Comentarios</th>
+            <th style="width:24%;">Fecha y hora</th><td id="rep-fecha"></td>
+            <th style="width:16%;">Apto</th><td id="rep-apto" style="font-weight:700;"></td>
           </tr>
-        </thead>
-        <tbody id="r_tbl_body">
-          <!-- Se llena vía JS -->
-        </tbody>
-      </table>
-
-      <div class="summary">
-        <div><span>Estado general:</span> <strong id="r_estado_general">—</strong></div>
-        <div><span>Apto para servicio:</span> <strong id="r_apto">—</strong></div>
+          <tr>
+            <th>Código vehículo</th><td id="rep-cod"></td>
+            <th>Placa</th><td id="rep-placa"></td>
+          </tr>
+          <tr>
+            <th>Kilometraje</th><td id="rep-km"></td>
+            <th>Ubicación</th><td id="rep-ubic"></td>
+          </tr>
+          <tr>
+            <th>Conductor</th><td id="rep-conductor"></td>
+            <th>Inspector</th><td id="rep-inspector"></td>
+          </tr>
+        </table>
       </div>
 
-      <div class="notes">
-        <div>
-          <h4>Observaciones</h4>
-          <p id="r_obs">—</p>
-        </div>
-        <div>
-          <h4>Acciones Correctivas</h4>
-          <p id="r_acc">—</p>
-        </div>
+      <div class="rep-card" style="margin-bottom:8px;">
+        <div style="font-weight:700; margin-bottom:4px;">Evaluación de sistemas</div>
+        <table class="rep-table" id="rep-sys">
+          <thead>
+            <tr><th style="width:28%;">Sistema</th><th style="width:14%;">Estado</th><th>Observación</th></tr>
+          </thead>
+          <tbody id="rep-sys-body"></tbody>
+        </table>
       </div>
 
-      <h3>Evidencias fotográficas</h3>
-      <div class="photos">
-        <figure>
-          <img id="r_foto1" alt="Evidencia 1" />
-          <figcaption>Foto 1</figcaption>
-        </figure>
-        <figure>
-          <img id="r_foto2" alt="Evidencia 2" />
-          <figcaption>Foto 2</figcaption>
-        </figure>
-      </div>
-
-      <div class="signatures">
-        <div>
-          <div class="sig-line"></div>
-          <div class="sig-name" id="r_conductor_sig">—</div>
-          <div class="sig-role">Conductor responsable</div>
-        </div>
-        <div>
-          <div class="sig-line"></div>
-          <div class="sig-name" id="r_inspector_sig">—</div>
-          <div class="sig-role">Inspector / Gestor GDR</div>
+      <div class="rep-card">
+        <div style="font-weight:700; margin-bottom:6px;">Evidencia fotográfica</div>
+        <div class="print-grid">
+          <figure>
+            <img id="rep-img1" alt="Foto 1">
+            <figcaption style="font-size:12px; text-align:center;">Foto 1</figcaption>
+          </figure>
+          <figure>
+            <img id="rep-img2" alt="Foto 2">
+            <figcaption style="font-size:12px; text-align:center;">Foto 2</figcaption>
+          </figure>
         </div>
       </div>
 
-      <footer class="report-footer">
-        <div>Emitido por <strong>ECSA – GDR</strong> | Uso Interno</div>
-        <div>Fecha/Hora de emisión: <span id="r_emitido">—</span> | Folio: <span id="r_folio">—</span></div>
+      <footer style="margin-top:8px; display:flex; gap:20px;">
+        <div style="flex:1;">
+          <div style="height:40px;"></div>
+          <div style="border-top:1px solid #000; text-align:center; font-size:12px;">Firma Conductor</div>
+        </div>
+        <div style="flex:1;">
+          <div style="height:40px;"></div>
+          <div style="border-top:1px solid #000; text-align:center; font-size:12px;">Firma Inspector</div>
+        </div>
       </footer>
     </section>
-  </main>
 
-  <script src="app.js"></script>
+    <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg border border-white/20 shadow-lg hidden"></div>
+  </div>
+
+  <script>
+    // ====== Helpers ======
+    const $ = (sel, ctx=document) => ctx.querySelector(sel);
+    const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+    const pad2 = n => String(n).padStart(2,'0');
+    const nowLocal = () => {
+      const d = new Date();
+      const tzoffset = d.getTimezoneOffset();
+      const local = new Date(d - tzoffset*60000);
+      return local.toISOString().slice(0,16);
+    };
+    const showToast = (msg) => {
+      const el = $('#toast'); el.textContent = msg; el.classList.remove('hidden');
+      setTimeout(()=> el.classList.add('hidden'), 2200);
+    };
+
+    const SYSTEMS = [
+      'Motor','Transmisión / Tracción','Dirección','Frenos','Suspensión',
+      'Neumáticos','Eléctrico / Iluminación','Luces','Fluidos (aceite, refrigerante, etc.)',
+      'Carrocería','Seguridad (extintor, triángulos)','Otros'
+    ];
+    const STATUS_OPTS = [
+      {v:'OK', t:'OK'},
+      {v:'OBS', t:'Atención'},
+      {v:'CRI', t:'Crítico'}
+    ];
+
+    // ====== Build systems table ======
+    const tbody = $('#sysTableBody');
+    SYSTEMS.forEach((name, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="p-2">${name}</td>
+        <td class="p-2">
+          <select class="sys-select" id="sys-${i}-sel" data-sys="${name}">
+            ${STATUS_OPTS.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
+          </select>
+        </td>
+        <td class="p-2"><input id="sys-${i}-note" class="sys-note" placeholder="Observación / Nota (opcional)"></td>`;
+      tbody.appendChild(tr);
+    });
+
+    // ====== Form elements ======
+    const form = $('#rdvForm');
+    const cod = $('#cod'), placa = $('#placa'), km = $('#km'), fecha = $('#fecha');
+    const conductor = $('#conductor'), inspector = $('#inspector'), ubicacion = $('#ubicacion');
+    const obsGeneral = $('#obsGeneral');
+    const foto1 = $('#foto1'), foto2 = $('#foto2'), prev1 = $('#prev1'), prev2 = $('#prev2');
+    const aptoSi = $('#aptoSi'), aptoNo = $('#aptoNo');
+    const liveCodigo = $('#liveCodigo'), liveEstado = $('#liveEstado'), liveSaved = $('#liveSaved');
+    const btnGenerar = $('#btnGenerar'), btnImprimir = $('#btnImprimir'), btnLimpiar = $('#btnLimpiar');
+
+    // Defaults
+    fecha.value = nowLocal();
+
+    const updateLiveCode = () => {
+      const d = fecha.value ? new Date(fecha.value) : new Date();
+      const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
+      const code = `${y}${m}-RDV-${(cod.value||'???').toUpperCase().replace(/\s+/g,'')}-${day}`;
+      liveCodigo.textContent = code;
+      return code;
+    };
+
+    // Uppercase code; live code
+    cod.addEventListener('input', e => { cod.value = cod.value.toUpperCase(); updateLiveCode(); saveDraft(); });
+    fecha.addEventListener('change', ()=> { updateLiveCode(); saveDraft(); });
+    [placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el.addEventListener('input', saveDraft));
+    $$('select[id^=sys-]').forEach(el => el.addEventListener('change', (ev)=>{
+      // If any critical, set NO APTO
+      const anyCritical = $$('select[id^=sys-]').some(s=> s.value==='CRI');
+      if (anyCritical) { aptoNo.checked = true; }
+      saveDraft();
+    }));
+    $$('input[id^=sys-][id$=note]').forEach(el => el.addEventListener('input', saveDraft));
+
+    // Image previews + resize
+    const readAndPreview = (file, imgEl, cb) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataURL = await resizeDataURL(reader.result, 1400); // max width
+        imgEl.src = dataURL; imgEl.classList.remove('hidden');
+        cb && cb(dataURL);
+      };
+      reader.readAsDataURL(file);
+    };
+
+    async function resizeDataURL(dataURL, maxW=1400){
+      return new Promise((resolve)=>{
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxW / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = dataURL;
+      });
+    }
+
+    let foto1Data = null, foto2Data = null;
+    foto1.addEventListener('change', (e)=>{
+      if (e.target.files && e.target.files[0]) {
+        readAndPreview(e.target.files[0], prev1, (d)=>{ foto1Data = d; saveDraft(); });
+      }
+    });
+    foto2.addEventListener('change', (e)=>{
+      if (e.target.files && e.target.files[0]) {
+        readAndPreview(e.target.files[0], prev2, (d)=>{ foto2Data = d; saveDraft(); });
+      }
+    });
+
+    // ====== Draft (localStorage) ======
+    const KEY = 'RDV_GDR_DRAFT';
+    function saveDraft(){
+      const sys = $$('select[id^=sys-]').map(s => ({name: s.dataset.sys, val: s.value, note: $(`#${s.id.replace('-sel','-note')}`).value || ''}));
+      const data = {
+        cod: cod.value, placa: placa.value, km: km.value, fecha: fecha.value,
+        conductor: conductor.value, inspector: inspector.value, ubicacion: ubicacion.value,
+        obsGeneral: obsGeneral.value, apto: aptoSi.checked ? 'SI' : 'NO',
+        sys, foto1Data, foto2Data, _t: new Date().toLocaleString()
+      };
+      localStorage.setItem(KEY, JSON.stringify(data));
+      liveSaved.textContent = data._t;
+    }
+    function loadDraft(){
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        cod.value = d.cod || ''; placa.value = d.placa || ''; km.value = d.km || '';
+        fecha.value = d.fecha || nowLocal();
+        conductor.value = d.conductor || ''; inspector.value = d.inspector || ''; ubicacion.value = d.ubicacion || '';
+        obsGeneral.value = d.obsGeneral || '';
+        (d.apto==='SI' ? (aptoSi.checked=true) : (aptoNo.checked=true));
+        if (Array.isArray(d.sys)) {
+          d.sys.forEach((it, i)=>{
+            const s = $(`#sys-${i}-sel`); const n = $(`#sys-${i}-note`);
+            if (s) s.value = it.val || 'OK';
+            if (n) n.value = it.note || '';
+          });
+        }
+        foto1Data = d.foto1Data || null; foto2Data = d.foto2Data || null;
+        if (foto1Data) { prev1.src = foto1Data; prev1.classList.remove('hidden'); }
+        if (foto2Data) { prev2.src = foto2Data; prev2.classList.remove('hidden'); }
+        liveSaved.textContent = d._t || '—';
+        updateLiveCode();
+      } catch(e){ console.warn('No se pudo cargar el borrador', e); }
+    }
+    loadDraft();
+
+    // ====== Generate Report ======
+    function validar(){
+      if (!cod.value.trim()) return 'Código del vehículo es obligatorio.';
+      if (!placa.value.trim()) return 'La placa es obligatoria.';
+      if (!km.value || Number(km.value) < 0) return 'Kilometraje inválido.';
+      if (!fecha.value) return 'Fecha/hora obligatoria.';
+      if (!foto1Data || !foto2Data) return 'Debes cargar dos fotos.';
+      return null;
+    }
+
+    function fillReport(){
+      const d = fecha.value ? new Date(fecha.value) : new Date();
+      const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
+      const code = `${y}${m}-RDV-${cod.value.toUpperCase().replace(/\s+/g,'')}-${day}`;
+
+      // Header
+      $('#rep-codigo').textContent = code;
+      $('#rep-fecha').textContent = new Date(fecha.value).toLocaleString();
+      $('#rep-apto').textContent = aptoSi.checked ? 'APTO' : 'NO APTO';
+      $('#rep-apto').style.color = aptoSi.checked ? 'green' : 'red';
+      $('#rep-cod').textContent = cod.value.toUpperCase();
+      $('#rep-placa').textContent = placa.value.toUpperCase();
+      $('#rep-km').textContent = Number(km.value).toLocaleString();
+      $('#rep-ubic').textContent = ubicacion.value || '—';
+      $('#rep-conductor').textContent = conductor.value || '—';
+      $('#rep-inspector').textContent = inspector.value || '—';
+
+      // Systems
+      const body = $('#rep-sys-body');
+      body.innerHTML = '';
+      $$('select[id^=sys-]').forEach(s => {
+        const note = $(`#${s.id.replace('-sel','-note')}`).value || '';
+        const tr = document.createElement('tr');
+        const statusText = s.value==='OK' ? 'OK' : (s.value==='OBS' ? 'Atención' : 'Crítico');
+        tr.innerHTML = `<td>${s.dataset.sys}</td><td>${statusText}</td><td>${note || '—'}</td>`;
+        body.appendChild(tr);
+      });
+
+      // Photos
+      $('#rep-img1').src = foto1Data;
+      $('#rep-img2').src = foto2Data;
+
+      // Live panels
+      liveEstado.textContent = 'Informe generado';
+      liveCodigo.textContent = code;
+      return code;
+    }
+
+    btnGenerar.addEventListener('click', ()=>{
+      const err = validar();
+      if (err) { alert(err); return; }
+      const code = fillReport();
+      document.title = code; // usado por el diálogo de "Guardar como PDF"
+      btnImprimir.disabled = false;
+      showToast('Informe generado. Listo para imprimir/guardar PDF.');
+      saveDraft();
+    });
+
+    btnImprimir.addEventListener('click', ()=>{
+      if (btnImprimir.disabled) return;
+      window.print();
+      showToast('Abriendo el diálogo de impresión...');
+    });
+
+    window.addEventListener('afterprint', ()=>{
+      // Restaurar título si se desea
+      // document.title = 'RDV — GDR';
+    });
+
+    btnLimpiar.addEventListener('click', ()=>{
+      if (!confirm('¿Seguro que deseas limpiar el formulario y borrar el borrador guardado?')) return;
+      localStorage.removeItem(KEY);
+      form.reset();
+      foto1Data = null; foto2Data = null;
+      prev1.classList.add('hidden'); prev2.classList.add('hidden');
+      fecha.value = nowLocal();
+      updateLiveCode();
+      liveEstado.textContent = 'Pendiente';
+      btnImprimir.disabled = true;
+      showToast('Formulario reiniciado.');
+    });
+
+    // teclado: Ctrl/Cmd+P dispara impresión cuando el informe existe
+    window.addEventListener('keydown', (e)=>{
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='p'){
+        if (btnImprimir.disabled){ e.preventDefault(); alert('Primero genera el informe.'); }
+      }
+    });
+
+    // Inicial
+    updateLiveCode();
+  </script>
 </body>
 </html>
