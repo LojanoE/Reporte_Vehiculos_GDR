@@ -54,13 +54,17 @@ const btnGenerar = $('#btnGenerar'), btnImprimir = $('#btnImprimir'), btnLimpiar
 // Defaults
 if (fecha) fecha.value = nowLocal();
 
-// === Generador del código RDV: AÑOMES-GDR-RDV-0DÍA
+
+// === Generador del código RDV: AÑOMES-CODVEH-RDV-0DÍA
 function generateCode(baseDate){
   const d = baseDate || (fecha && fecha.value ? new Date(fecha.value) : new Date());
   const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
-  // Formato solicitado: 2509-GDR-RDV-009
-  return `${y}${m}-GDR-RDV-0${day}-V0`;
+  // En vez de "GDR" usar el código de vehículo ingresado
+  const veh = (cod && cod.value ? cod.value.trim().toUpperCase() : 'GDR');
+  // Formato: 2509-ECO62-RDV-009 (si no hay código, queda GDR como respaldo)
+  return `${y}${m}-${veh}-RDV-0${day}`;
 }
+
 
 
 const updateLiveCode = () => {
