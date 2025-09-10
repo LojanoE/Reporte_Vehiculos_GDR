@@ -131,22 +131,45 @@ function saveDraft(){
   try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
 }
 function loadDraft(){
+  // Si la navegación fue un "reload" del navegador, limpiar todo y no cargar borrador
+  try {
+    const nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+    const isReload = nav ? nav.type === 'reload' : (performance.navigation && performance.navigation.type === 1);
+    if (isReload) {
+      try { localStorage.removeItem(KEY); } catch(e){}
+      if (form) form.reset();
+      foto1Data = null; foto2Data = null;
+      if (prev1) prev1.classList.add('hidden');
+      if (prev2) prev2.classList.add('hidden');
+      if (fecha) fecha.value = nowLocal();
+      updateLiveCode();
+      if (btnImprimir) btnImprimir.disabled = true;
+      return; // salir sin cargar nada del almacenamiento
+    }
+  } catch(_) {}
+
   const raw = localStorage.getItem(KEY);
   if (!raw) return;
   try {
     const d = JSON.parse(raw);
-    if (cod) cod.value = d.cod || ''; if (placa) placa.value = d.placa || ''; if (km) km.value = d.km || '';
+    if (cod) cod.value = d.cod || '';
+    if (placa) placa.value = d.placa || '';
+    if (km) km.value = d.km || '';
     if (fecha) fecha.value = d.fecha || nowLocal();
-    if (conductor) conductor.value = d.conductor || ''; if (inspector) inspector.value = d.inspector || ''; if (ubicacion) ubicacion.value = d.ubicacion || '';
+    if (conductor) conductor.value = d.conductor || '';
+    if (inspector) inspector.value = d.inspector || '';
+    if (ubicacion) ubicacion.value = d.ubicacion || '';
     if (obsGeneral) obsGeneral.value = d.obsGeneral || '';
     if (Array.isArray(d.sys)) {
       d.sys.forEach((it, i)=>{
-        const s = $(`#sys-${i}-sel`); const n = $(`#sys-${i}-note`);
+        const s = document.querySelector(`#sys-${i}-sel`);
+        const n = document.querySelector(`#sys-${i}-note`);
         if (s) s.value = it.val || 'OK';
         if (n) n.value = it.note || '';
       });
     }
-    foto1Data = d.foto1Data || null; foto2Data = d.foto2Data || null;
+    foto1Data = d.foto1Data || null;
+    foto2Data = d.foto2Data || null;
     if (foto1Data && prev1) { prev1.src = foto1Data; prev1.classList.remove('hidden'); }
     if (foto2Data && prev2) { prev2.src = foto2Data; prev2.classList.remove('hidden'); }
     updateLiveCode();

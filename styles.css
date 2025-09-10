@@ -276,4 +276,23 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   }
 }
 
-
+/* === OVERRIDES MÓVIL: tipografía más pequeña y logos compactos === */
+@media (max-width: 520px){
+  html { font-size: 14px; }
+  body { line-height: 1.2; }
+  label, input, select, textarea, .btn, .note { font-size: 0.9rem; }
+  table, th, td { font-size: 0.85rem; }
+  .bilingual-title .line1,
+  .bilingual-title .line2,
+  .bilingual-title .line3 .es,
+  .bilingual-title .line3 .cn { font-size: 0.9em !important; }
+}
+@media (max-width: 900px){
+  .kpi-card .logo-bar .rdv-logo { height: 44px !important; max-width: 46% !important; }
+}
+@media (max-width: 520px){
+  .kpi-card .logo-bar .rdv-logo { height: 32px !important; max-width: 44% !important; }
+}
+@media (max-width: 360px){
+  .kpi-card .logo-bar .rdv-logo { height: 28px !important; max-width: 70% !important; }
+}
