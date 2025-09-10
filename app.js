@@ -14,14 +14,14 @@ const showToast = (msg) => {
 };
 
 const SYSTEMS = [
-  'Motor','Transmisión / Tracción','Dirección','Frenos','Suspensión',
-  'Neumáticos','Eléctrico / Iluminación','Luces','Fluidos (aceite, refrigerante, etc.)',
-  'Carrocería','Seguridad (extintor, triángulos)','Otros'
+  'Motor','Sistema de Transmisión / Tracción','Dirección','Frenos','Suspensión',
+  'Neumáticos','Sistema Eléctrico','Luces','Fluidos (aceite, refrigerante, etc.)',
+  'Carrocería','Seguridad (extintor, conos)','Sistema de Combustible','Limpieza','Otros'
 ];
 const STATUS_OPTS = [
   {v:'OK', t:'OK'},
   {v:'OBS', t:'Atención'},
-  {v:'CRI', t:'Crítico'}
+  {v:'CRI', t:'Reparar'}
 ];
 
 // Build systems table
