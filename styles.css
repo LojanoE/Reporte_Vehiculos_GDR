@@ -92,3 +92,54 @@ html, body { background:#0b1220; color:#e5e7eb; }
   .rep-obs-title{ font-weight:700; font-size:11pt; margin-bottom:4px; }
   .rep-obs-content{ white-space:pre-wrap; font-size:10pt; min-height:14mm; }
 }
+
+
+/* ==== MOBILE COMPACT HEADER & MOBILE PRINT TWEAKS (added by ChatGPT) ==== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+@media (max-width: 480px) {
+  /* Make logos and header more compact on small phones */
+  .rdv-logo { height: 44px; }
+  .kpi-card { padding-top: 64px; }
+  .kpi-card .logo-bar { top: 8px; left: 10px; right: 10px; }
+  .kpi-card .bilingual-title { margin-top: 0; }
+  .bilingual-title .line1 { font-size: clamp(0.85rem, 3.8vw, 1rem); }
+  .bilingual-title .line2 { font-size: clamp(0.78rem, 3.2vw, 0.9rem); }
+  .bilingual-title .line3 .es { font-size: clamp(0.8rem, 3.6vw, 0.95rem); }
+  .bilingual-title .line3 .cn { font-size: clamp(0.72rem, 3.2vw, 0.9rem); }
+  #liveCodigo { font-size: clamp(1rem, 5.5vw, 1.35rem); }
+}
+
+@media print {
+  /* Slightly tighter margins and sizes to help mobile print fit better */
+  @page { size: A4; margin: 10mm; }
+  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rep-table th, .rep-table td { font-size: 11px; padding: 3px 5px; }
+  .print-grid img { height: 95mm; } /* smaller photos so signatures fit on page 2 */
+}
+
+
+/* ==== HOTFIX: prevent logo/title overlap on small phones ==== */
+@media (max-width: 520px) {
+  .kpi-card { padding-top: 0 !important; }
+  .kpi-card .logo-bar {
+    position: static !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+  .kpi-card .logo-bar .rdv-logo {
+    height: 36px !important;
+    max-width: 45%;
+    width: auto;
+    object-fit: contain;
+  }
+  .kpi-card .bilingual-title { margin-top: 0 !important; }
+  .bilingual-title .line1 { font-size: clamp(0.9rem, 3.8vw, 1rem); }
+  .bilingual-title .line2 { font-size: clamp(0.8rem, 3.4vw, 0.95rem); }
+  .bilingual-title .line3 .es { font-size: clamp(0.85rem, 3.6vw, 0.95rem); }
+  .bilingual-title .line3 .cn { font-size: clamp(0.75rem, 3.2vw, 0.9rem); }
+  #liveCodigo { font-size: clamp(1rem, 5vw, 1.35rem); }
+}
