@@ -225,6 +225,3 @@ if (btnLimpiar) btnLimpiar.addEventListener('click', ()=>{
 
 // Inicial
 updateLiveCode();
-
-// Impresión móvil: marcar body
-(function(){try{var m=/Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);if(m)document.body.classList.add('mprint');}catch(e){}})();
