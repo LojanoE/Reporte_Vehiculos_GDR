@@ -92,3 +92,12 @@ html, body { background:#0b1220; color:#e5e7eb; }
   .rep-obs-title{ font-weight:700; font-size:11pt; margin-bottom:4px; }
   .rep-obs-content{ white-space:pre-wrap; font-size:10pt; min-height:14mm; }
 }
+
+@media print {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+  .kpi-card { display:none !important; }
+  #toast { display:none !important; }
+  /* Evidencias siempre desde página 2 */
+  #report .print-grid { break-before: page; page-break-before: always; }
+}
