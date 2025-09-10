@@ -226,12 +226,5 @@ if (btnLimpiar) btnLimpiar.addEventListener('click', ()=>{
 // Inicial
 updateLiveCode();
 
-// === Impresión móvil: añade una clase al <body> si es teléfono/tablet ===
-(function(){
-  try {
-    var isMobile = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile && document && document.body) {
-      document.body.classList.add('mprint'); // usada por el CSS de impresión
-    }
-  } catch(e){}
-})();
+// Impresión móvil: marcar body
+(function(){try{var m=/Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);if(m)document.body.classList.add('mprint');}catch(e){}})();
