@@ -3,13 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <title>RDV — GDR</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 👇 fuerza nueva versión de los assets -->
-  <link rel="stylesheet" href="styles.css?v=2509091849">
+  <link rel="stylesheet" href="styles.css?v=250909-9">
 </head>
 <body>
   <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
@@ -33,15 +29,7 @@
         </div>
       </div>
 
-      <!-- Solo el código del informe -->
-      <div class="kpi-center-single">
-        <div class="kpi">
-          <span class="text-slate-400 text-xs">Código del Informe</span>
-          <div id="liveCodigo" class="font-mono text-2xl md:text-3xl font-semibold">—</div>
-        </div>
-      </div>
 
-      
     </section>
 
     <!-- ====== FORM ====== -->
@@ -147,7 +135,7 @@
           </tr>
           <tr>
             <th>Kilometraje</th><td id="rep-km"></td>
-            <th>Ubicación</th><td id="rep-ubic"></td>
+            <th>Cod. Reporte</th><td id="rep-arch"></td>
           </tr>
           <tr>
             <th>Conductor</th><td id="rep-conductor"></td>
@@ -200,6 +188,6 @@
     <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg border border-white/20 shadow-lg hidden"></div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=250909-9"></script>
 </body>
 </html>

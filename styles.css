@@ -29,7 +29,7 @@ html, body { background:#0b1220; color:#e5e7eb; }
 @media (min-width:768px){ .rdv-logo{ height:96px; } }
 
 /* Encabezado bilingüe (pantalla) */
-.bilingual-title{ text-align:center; line-height:1.2; color:#000000; }
+.bilingual-title{ text-align:center; line-height:1.2; color:#363844; }
 .kpi-card .bilingual-title{ margin-top:-14px; }
 @media (min-width:768px){ .kpi-card .bilingual-title{ margin-top:-22px; } }
 @media (min-width:1024px){ .kpi-card .bilingual-title{ margin-top:-26px; } }

@@ -175,7 +175,7 @@ function fillReport(){
   $('#rep-cod').textContent = (cod && cod.value || '').toUpperCase();
   $('#rep-placa').textContent = (placa && placa.value || '').toUpperCase();
   $('#rep-km').textContent = Number(km && km.value || 0).toLocaleString();
-  $('#rep-ubic').textContent = ubicacion && ubicacion.value || '—';
+  $('#rep-arch').textContent = generateCode();  // código del archivo en lugar de ubicación
   const repObs = $('#rep-obs'); if (repObs) repObs.textContent = (obsGeneral && obsGeneral.value || '—');
   $('#rep-conductor').textContent = conductor && conductor.value || '—';
   $('#rep-inspector').textContent = inspector && inspector.value || '—';
