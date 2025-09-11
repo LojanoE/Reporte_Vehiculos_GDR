@@ -183,7 +183,6 @@ function validar(){
   if (!placa || !placa.value.trim()) return 'La placa es obligatoria.';
   if (!km || !km.value || Number(km.value) < 0) return 'Kilometraje inválido.';
   if (!fecha || !fecha.value) return 'Fecha/hora obligatoria.';
-  if (!foto1Data || !foto2Data) return 'Debes cargar dos fotos.';
   return null;
 }
 function fillReport(){
