@@ -193,7 +193,7 @@ function fillReport(){
 
   const repCod = $('#rep-codigo'); if (repCod) repCod.textContent = code;
   $('#rep-fecha').textContent = new Date(fecha.value).toLocaleString();
-  const repApto = $('#rep-apto'); repApto.textContent = aptoSi && aptoSi.checked ? 'OPERATIVO' : 'MANTENIMIENTO';
+  const repApto = $('#rep-apto'); repApto.textContent = aptoSi && aptoSi.checked ? 'OPERATIVO' : (aptoNo && aptoNo.checked ? 'MANT. PREVENTIVO' : 'MANT. CORRECTIVO');
   repApto.style.color = aptoSi && aptoSi.checked ? 'green' : 'red';
   $('#rep-cod').textContent = (cod && cod.value || '').toUpperCase();
   $('#rep-placa').textContent = (placa && placa.value || '').toUpperCase();
