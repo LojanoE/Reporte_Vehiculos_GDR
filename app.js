@@ -51,6 +51,19 @@ const aptoSi = $('#aptoSi'), aptoNo = $('#aptoNo');
 const liveCodigo = $('#liveCodigo');
 const btnGenerar = $('#btnGenerar'), btnImprimir = $('#btnImprimir'), btnLimpiar = $('#btnLimpiar');
 
+// Mapa de códigos de vehículo a placas
+const vehiclePlateMap = {
+  'ECO04': 'PCX 9910',
+  'ECO05': 'PCX 9915',
+  'ECO06': 'PCX 9919',
+  'ECO23': 'PDI 5797',
+  'ECO26': 'PDI 5814',
+  'ECO36': 'PDI 5771',
+  'ECO62': 'ZBA 1564',
+  'GE-16': 'Sin placa',
+  'BZ-01': 'Sin placa'
+};
+
 // Defaults
 if (fecha) fecha.value = nowLocal();
 
@@ -70,6 +83,11 @@ function generateCode(baseDate){
 const updateLiveCode = () => {
   const code = generateCode();
   if (liveCodigo) liveCodigo.textContent = code;
+  // Autocompletar placa
+  if (cod && placa) {
+    const vehicleCode = cod.value.trim().toUpperCase();
+    placa.value = vehiclePlateMap[vehicleCode] || '';
+  }
   return code;
 };
 
