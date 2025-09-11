@@ -90,7 +90,7 @@ html, body { background:#0b1220; color:#e5e7eb; }
 @media print{
   .rep-obs-block{ border:1px solid #000; border-radius:4px; padding:6px 8px; margin-bottom:8px; }
   .rep-obs-title{ font-weight:700; font-size:11pt; margin-bottom:4px; }
-  .rep-obs-content{ white-space:pre-wrap; font-size:10pt; min-height:14mm; }
+  .rep-obs-content{ white-space:pre-wrap; font-size:10pt; min-height:10mm; }
 }
 
 
@@ -114,7 +114,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   /* Slightly tighter margins and sizes to help mobile print fit better */
   @page { size: A4; margin: 10mm; }
   html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .rep-table th, .rep-table td { font-size: 11px; padding: 3px 5px; }
+  .rep-table th, .rep-table td { font-size: 10px; padding: 3px 5px; }
   .print-grid img { height: 95mm; } /* smaller photos so signatures fit on page 2 */
 }
 
