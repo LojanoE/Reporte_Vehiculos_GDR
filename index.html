@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RDV — GDR</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=250909-13">
+  <link rel="stylesheet" href="styles.css?v=250909-15">
 </head>
 <body>
   <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
@@ -81,7 +81,7 @@
 
       <div class="grid-2">
         <fieldset class="space-y-2">
-          <legend class="text-sm font-semibold">Dictamen general</legend>
+          <legend class="text-sm font-semibold">ESTADO</legend>
           <label class="inline-flex items-center gap-2">
             <input type="radio" name="apto" id="aptoSi" value="SI" class="accent-emerald-400" checked>
             <span class="text-emerald-400 font-semibold">OPERATIVO</span>
@@ -129,7 +129,7 @@
         <table class="rep-table">
           <tr>
             <th style="width:24%;">Fecha y hora</th><td id="rep-fecha"></td>
-            <th style="width:16%;">APTITUD</th><td id="rep-apto" style="font-weight:700;"></td>
+            <th style="width:16%;">ESTADO</th><td id="rep-apto" style="font-weight:700;"></td>
           </tr>
           <tr>
             <th>Código vehículo</th><td id="rep-cod"></td>
@@ -189,7 +189,6 @@
 
     <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg border border-white/20 shadow-lg hidden"></div>
   </div>
-
-  <script src="app.js?v=250909-9"></script>
+  <script src="app.js?v=250909-15"></script>
 </body>
 </html>
