@@ -75,7 +75,7 @@ function generateCode(baseDate){
   // En vez de "GDR" usar el código de vehículo ingresado
   const veh = (cod && cod.value ? cod.value.trim().toUpperCase() : 'GDR');
   // Formato: 2509-ECO62-RDV-009 (si no hay código, queda GDR como respaldo)
-  return `${y}${m}-${veh}-RDV-0${day}`;
+  return `${y}${m}-${veh}-RDV-0${day}-V0`;
 }
 
 
