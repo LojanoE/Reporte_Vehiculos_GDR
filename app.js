@@ -14,8 +14,8 @@ const showToast = (msg) => {
 };
 
 const SYSTEMS = [
-  'Motor','Sistema de Transmisión / Tracción','Dirección','Frenos','Suspensión',
-  'Neumáticos','Sistema Eléctrico','Luces','Fluidos (aceite, refrigerante, etc.)',
+  'Motor','Sistema de Transmisión','Dirección','Frenos','Suspensión',
+  'Neumáticos','Sistema Eléctrico','Luces','Fluidos',
   'Carrocería','Seguridad (extintor, conos)','Sistema de Combustible','Limpieza','Otros'
 ];
 const STATUS_OPTS = [
