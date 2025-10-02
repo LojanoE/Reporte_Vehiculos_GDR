@@ -1,12 +1,25 @@
 // ====== Helpers ======
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
-const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+const $ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
 const pad2 = n => String(n).padStart(2,'0');
+
+// Formato de fecha solicitado: YYYY-MM-DD HH:MM:SS
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = pad2(date.getMonth() + 1);
+  const day = pad2(date.getDate());
+  const hours = pad2(date.getHours());
+  const minutes = pad2(date.getMinutes());
+  const seconds = pad2(date.getSeconds());
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
 const nowLocal = () => {
   const d = new Date();
   const tzoffset = d.getTimezoneOffset();
   const local = new Date(d - tzoffset*60000);
-  return local.toISOString().slice(0,16);
+  return formatDate(local);
 };
 const showToast = (msg) => {
   const el = $('#toast'); if(!el) return; el.textContent = msg; el.classList.remove('hidden');
@@ -144,7 +157,7 @@ function saveDraft(){
     cod: cod && cod.value || '', placa: placa && placa.value || '', km: km && km.value || '', fecha: fecha && fecha.value || '',
     conductor: conductor && conductor.value || '', inspector: inspector && inspector.value || '', ubicacion: ubicacion && ubicacion.value || '',
     obsGeneral: obsGeneral && obsGeneral.value || '', apto: aptoSi && aptoSi.checked ? 'SI' : 'NO',
-    sys, foto1Data, foto2Data, _t: new Date().toLocaleString()
+    sys, foto1Data, foto2Data, _t: formatDate(new Date())
   };
   try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
 }
@@ -218,7 +231,7 @@ function fillReport(){
   const code = generateCode(d);
 
   const repCod = $('#rep-codigo'); if (repCod) repCod.textContent = code;
-  $('#rep-fecha').textContent = new Date(fecha.value).toLocaleString();
+  $('#rep-fecha').textContent = formatDate(new Date(fecha.value));
   const repApto = $('#rep-apto'); repApto.textContent = aptoSi && aptoSi.checked ? 'OPERATIVO' : (aptoNo && aptoNo.checked ? 'MANT. PREVENTIVO' : 'MANT. CORRECTIVO');
   repApto.style.color = aptoSi && aptoSi.checked ? 'green' : 'red';
   $('#rep-cod').textContent = (cod && cod.value || '').toUpperCase();
