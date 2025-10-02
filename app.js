@@ -8,6 +8,14 @@ const nowLocal = () => {
   const local = new Date(d - tzoffset*60000);
   return local.toISOString().slice(0,16);
 };
+const formatDateTime = (date) => {
+  const d = new Date(date);
+  const day = pad2(d.getDate());
+  const month = pad2(d.getMonth() + 1);
+  const year = d.getFullYear();
+  const time = d.toLocaleTimeString('es-EC', { hour12: false });
+  return `${day}/${month}/${year}, ${time}`;
+};
 const showToast = (msg) => {
   const el = $('#toast'); if(!el) return; el.textContent = msg; el.classList.remove('hidden');
   setTimeout(()=> el.classList.add('hidden'), 2200);
@@ -218,7 +226,7 @@ function fillReport(){
   const code = generateCode(d);
 
   const repCod = $('#rep-codigo'); if (repCod) repCod.textContent = code;
-  $('#rep-fecha').textContent = new Date(fecha.value).toLocaleString();
+  $('#rep-fecha').textContent = formatDateTime(fecha.value);
   const repApto = $('#rep-apto'); repApto.textContent = aptoSi && aptoSi.checked ? 'OPERATIVO' : (aptoNo && aptoNo.checked ? 'MANT. PREVENTIVO' : 'MANT. CORRECTIVO');
   repApto.style.color = aptoSi && aptoSi.checked ? 'green' : 'red';
   $('#rep-cod').textContent = (cod && cod.value || '').toUpperCase();
