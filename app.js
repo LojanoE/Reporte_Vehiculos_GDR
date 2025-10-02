@@ -161,7 +161,10 @@ function loadDraft(){
       if (prev2) prev2.classList.add('hidden');
       if (fecha) fecha.value = nowLocal();
       updateLiveCode();
-      if (btnImprimir) btnImprimir.disabled = true;
+      if (btnImprimir) {
+        btnImprimir.disabled = true;
+        btnImprimir.classList.remove('btn-highlight');
+      }
       return; // salir sin cargar nada del almacenamiento
     }
   } catch(_) {}
@@ -191,6 +194,12 @@ function loadDraft(){
     if (foto1Data && prev1) { prev1.src = foto1Data; prev1.classList.remove('hidden'); }
     if (foto2Data && prev2) { prev2.src = foto2Data; prev2.classList.remove('hidden'); }
     updateLiveCode();
+    
+    // If the draft contains data, enable the print button and apply yellow styling
+    if (btnImprimir) {
+      btnImprimir.disabled = false;
+      btnImprimir.classList.add('btn-highlight');
+    }
   } catch(e){ console.warn('No se pudo cargar el borrador', e); }
 }
 loadDraft();
@@ -242,7 +251,10 @@ if (btnGenerar) btnGenerar.addEventListener('click', ()=>{
   if (err) { alert(err); return; }
   const code = fillReport();
   document.title = code;
-  if (btnImprimir) btnImprimir.disabled = false;
+  if (btnImprimir) {
+    btnImprimir.disabled = false;
+    btnImprimir.classList.add('btn-highlight');
+  }
   showToast('Informe generado. Listo para imprimir/guardar PDF.');
   saveDraft();
 });
@@ -259,7 +271,10 @@ if (btnLimpiar) btnLimpiar.addEventListener('click', ()=>{
   if (prev1) prev1.classList.add('hidden'); if (prev2) prev2.classList.add('hidden');
   if (fecha) fecha.value = nowLocal();
   updateLiveCode();
-  if (btnImprimir) btnImprimir.disabled = true;
+  if (btnImprimir) {
+    btnImprimir.disabled = true;
+    btnImprimir.classList.remove('btn-highlight');
+  }
   showToast('Formulario reiniciado.');
 });
 

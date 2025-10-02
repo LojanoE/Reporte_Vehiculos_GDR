@@ -12,6 +12,7 @@ html, body { background:#0b1220; color:#e5e7eb; }
 .btn-primary { background:linear-gradient(180deg, #22d3ee, #0ea5e9); color:#0b1220; font-weight:600; }
 .btn-ghost { background:transparent; }
 .btn-danger { background:linear-gradient(180deg, #fb7185, #ef4444); color:#fff; }
+.btn-highlight { background-color: #fbbf24; color: #000; } /* Yellow highlight color */
 .kpi { border: 1px solid rgba(255,255,255,.12); border-radius:.75rem; padding:.4rem .6rem; }
 .kbd { border:1px solid rgba(255,255,255,.2); border-radius:.4rem; padding:.1rem .35rem; font-size:.75rem; }
 .note { color:#cbd5e1; font-size:.85rem; }
