@@ -292,38 +292,16 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   }
 }
 
-/* Mobile devices - Force light mode appearance to prevent dark backgrounds */
-@media screen and (max-width: 768px) {
-  html, body {
+/* Force light appearance specifically for report content during print in mobile devices */
+@media print and (max-width: 768px) {
+  #report, #report * {
     background: #fff !important;
     color: #000 !important;
   }
-  .card, .soft, .rep-card, .sys-note, .thumb, .kpi {
+  .rep-card, .rep-table, .rep-table th, .rep-table td {
     background: #fff !important;
     color: #000 !important;
-  }
-  .max-w-5xl, section, footer, header {
-    background: #fff !important;
-    color: #000 !important;
-  }
-  /* Override system dark mode in mobile browsers */
-  * {
-    background: #fff !important;
-    color: #000 !important;
-  }
-}
-
-/* Force light appearance for mobile devices regardless of system settings */
-@media (prefers-color-scheme: dark) and (max-width: 768px) {
-  html, body {
-    background: #fff !important;
-    color: #000 !important;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  * {
-    background: #fff !important;
-    color: #000 !important;
+    border-color: #000 !important;
   }
 }
 /* Tablets y móviles grandes */
