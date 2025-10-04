@@ -305,3 +305,109 @@ if (btnLimpiar) btnLimpiar.addEventListener('click', ()=>{
 
 // Inicial
 updateLiveCode();
+
+// ====== CHATBOT LOGIC ======
+document.addEventListener('DOMContentLoaded', () => {
+  const chatbotContainer = document.getElementById('chatbot-container');
+  const chatbotToggler = document.getElementById('chatbot-toggler');
+  const chatbotClose = document.getElementById('chatbot-close');
+  const chatbotBody = document.getElementById('chatbot-body');
+  const chatbotOptions = document.getElementById('chatbot-options');
+
+  if (!chatbotContainer || !chatbotToggler || !chatbotClose || !chatbotBody || !chatbotOptions) {
+    console.error('Chatbot elements not found');
+    return;
+  }
+
+  chatbotToggler.addEventListener('click', () => {
+    chatbotContainer.classList.toggle('hidden');
+  });
+
+  chatbotClose.addEventListener('click', () => {
+    chatbotContainer.classList.add('hidden');
+  });
+
+  const showHelp = (topic) => {
+    // Clear previous dynamic content
+    const dynamicContent = chatbotBody.querySelectorAll('.user-message, .bot-response');
+    dynamicContent.forEach(el => el.remove());
+
+    let userMessage = '';
+    let botResponse = '';
+
+    switch (topic) {
+      case 'datos':
+        userMessage = 'Ayuda con Datos generales';
+        botResponse = `
+          <p>¡Claro! Aquí te explico cómo llenar la sección de <strong>Datos Generales</strong>:</p>
+          <ul>
+            <li><strong>Código del vehículo:</strong> Ingresa el identificador único. Ej: <code>ECO62</code>, <code>CAM-01</code>.</li>
+            <li><strong>Placa:</strong> Escribe la placa del vehículo. Ej: <code>ABC 1234</code>.</li>
+            <li><strong>Kilometraje actual:</strong> Pon el número sin puntos ni comas. Ej: <code>123456</code>.</li>
+            <li><strong>Conductor:</strong> Tu nombre completo.</li>
+          </ul>
+        `;
+        break;
+      case 'sistemas':
+        userMessage = 'Ayuda con Evaluación de sistemas';
+        botResponse = `
+          <p>Para la <strong>Evaluación de Sistemas</strong>, sigue estos pasos:</p>
+          <ol>
+            <li>Revisa cada sistema listado en el vehículo.</li>
+            <li>Selecciona un estado en el menú desplegable:</li>
+            <li>- <strong>OK:</strong> Si funciona correctamente.</li>
+            <li>- <strong>Atención:</strong> Si necesita revisión pero no es urgente.</li>
+            <li>- <strong>Reparar:</strong> Si es una falla crítica que impide la operación.</li>
+            <li>Si eliges 'Atención' o 'Reparar', <strong>escribe una breve nota</strong> en el campo de observación. Ej: <code>Luz de freno quemada</code>.</li>
+          </ol>
+        `;
+        break;
+      case 'fotos':
+        userMessage = 'Ayuda con Evidencia fotográfica';
+        botResponse = `
+          <p>En <strong>Evidencia Fotográfica</strong>, debes subir dos fotos obligatorias:</p>
+          <ul>
+            <li>Usa tu celular o tablet para tomar las fotos.</li>
+            <li><strong>Foto 1:</strong> Una foto general del vehículo, que se vea completo.</li>
+            <li><strong>Foto 2:</strong> Una foto de un detalle específico, como el tablero con el kilometraje, una llanta, o cualquier novedad que hayas reportado.</li>
+            <li>Presiona "Seleccionar archivo" y toma la foto o elígela de tu galería.</li>
+          </ul>
+        `;
+        break;
+      case 'estado':
+        userMessage = 'Ayuda con Estado del vehículo';
+        botResponse = `
+          <p>El <strong>Estado del Vehículo</strong> define su condición final tras la revisión:</p>
+          <ul>
+            <li><strong style="color: #16a34a;">OPERATIVO:</strong> El vehículo se puede operar sin problemas.</li>
+            <li><strong style="color: #ef4444;">MANT. PREVENTIVO:</strong> Se que necesita un cambio de aceite. El vehículo entrará al taller y no puede usarse hasta entonces.</li>
+            <li><strong style="color: #ef4444;">MANT. CORRECTIVO:</strong> Se encontró una falla importante. El vehículo debe ir a mecánica para ser reparado y no debe usarse hasta entonces.</li>
+          </ul>
+        `;
+        break;
+    }
+
+    // Append user message
+    const userBubble = document.createElement('div');
+    userBubble.className = 'user-message';
+    userBubble.innerHTML = `<p>${userMessage}</p>`;
+    chatbotBody.appendChild(userBubble);
+
+    // Append bot response after a short delay
+    setTimeout(() => {
+      const botBubble = document.createElement('div');
+      botBubble.className = 'bot-message bot-response';
+      botBubble.innerHTML = botResponse;
+      chatbotBody.appendChild(botBubble);
+      // Scroll to the bottom
+      chatbotBody.scrollTop = chatbotBody.scrollHeight;
+    }, 300);
+  };
+
+  chatbotOptions.addEventListener('click', (e) => {
+    const target = e.target.closest('.chatbot-option');
+    if (target && target.dataset.topic) {
+      showHelp(target.dataset.topic);
+    }
+  });
+});
