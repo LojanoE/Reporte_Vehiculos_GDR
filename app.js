@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         botResponse = `
           <p>¡Claro! Aquí te explico cómo llenar la sección de <strong>Datos Generales</strong>:</p>
           <ul>
-            <li><strong>Código del vehículo:</strong> Ingresa el identificador único. Ej: <code>ECO62</code>, <code>CAM-01</code>.</li>
+            <li><strong>Código del vehículo:</strong> Ingresa el identificador único. Ej: <code>ECO62 ECO04 ECO05</code>, <code>CAM-01</code>.</li>
             <li><strong>Placa:</strong> Escribe la placa del vehículo. Ej: <code>ABC 1234</code>.</li>
             <li><strong>Kilometraje actual:</strong> Pon el número sin puntos ni comas. Ej: <code>123456</code>.</li>
             <li><strong>Conductor:</strong> Tu nombre completo.</li>
