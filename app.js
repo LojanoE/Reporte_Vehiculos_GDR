@@ -263,8 +263,13 @@ if (btnGenerar) btnGenerar.addEventListener('click', ()=>{
     btnImprimir.disabled = false;
     btnImprimir.classList.add('btn-highlight');
   }
-  showToast('Informe generado. Listo para imprimir/guardar PDF.');
+  showToast('Informe generado. Abriendo diálogo de impresión...');
   saveDraft();
+  
+  // Automáticamente abrir el diálogo de impresión después de un breve delay
+  setTimeout(() => {
+    window.print();
+  }, 500); // 500ms de delay para permitir que se complete la actualización de la UI
 });
 if (btnImprimir) btnImprimir.addEventListener('click', ()=>{
   if (btnImprimir.disabled) return;

@@ -244,19 +244,51 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 /* ==== PRINT: remove dark backgrounds/gradients so page doesn't turn black ==== */
 @media print {
-  html, body { background: #fff !important; }
+  html, body { 
+    background: #fff !important; 
+    color: #000 !important;
+  }
   /* Remove card/soft gradients and shadows */
   .card, .soft, .rep-card, .sys-note, .thumb, .kpi {
     background: #fff !important;
     background-image: none !important;
     box-shadow: none !important;
     filter: none !important;
+    color: #000 !important;
   }
   /* Remove borders and rounded corners if they create dark blocks */
   .card, .soft { border: 0 !important; border-radius: 0 !important; }
   /* Ensure wrappers don't carry dark background */
   .max-w-5xl, section, footer, header {
     background: #fff !important;
+    color: #000 !important;
+  }
+  /* Force text color to black for all elements in print */
+  * {
+    color: #000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* Specific fixes for elements that might still have issues */
+  .rep-table th, .rep-table td {
+    background: #fff !important;
+    color: #000 !important;
+    border-color: #000 !important;
+  }
+  .rep-card {
+    border-color: #000 !important;
+  }
+}
+
+/* Force light mode appearance for print to counteract dark mode */
+@media print and (prefers-color-scheme: dark) {
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  * {
+    background: #fff !important;
+    color: #000 !important;
   }
 }
 /* Tablets y móviles grandes */
