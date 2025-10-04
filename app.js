@@ -254,6 +254,8 @@ function fillReport(){
   return code;
 }
 
+let informeGenerado = false; // Variable para rastrear si ya se generó el informe
+
 if (btnGenerar) btnGenerar.addEventListener('click', ()=>{
   const err = validar();
   if (err) { alert(err); return; }
@@ -265,11 +267,21 @@ if (btnGenerar) btnGenerar.addEventListener('click', ()=>{
   }
   showToast('Informe generado. Abriendo diálogo de impresión...');
   saveDraft();
+  informeGenerado = true;
   
-  // Automáticamente abrir el diálogo de impresión después de un breve delay
-  setTimeout(() => {
-    window.print();
-  }, 500); // 500ms de delay para permitir que se complete la actualización de la UI
+  // Ejecutar la impresión inmediatamente en respuesta al clic del usuario
+  window.print();
+});
+
+// Modificar el botón de imprimir para que imprima directamente si el informe ya fue generado
+if (btnImprimir) btnImprimir.addEventListener('click', ()=>{
+  if (btnImprimir.disabled) {
+    // Si el botón está deshabilitado, significa que el informe no ha sido generado
+    alert('Primero debe generar el informe antes de imprimirlo.');
+    return;
+  }
+  window.print();
+  showToast('Abriendo el diálogo de impresión...');
 });
 if (btnImprimir) btnImprimir.addEventListener('click', ()=>{
   if (btnImprimir.disabled) return;
