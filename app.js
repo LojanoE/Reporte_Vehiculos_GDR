@@ -23,8 +23,8 @@ const showToast = (msg) => {
 
 const SYSTEMS = [
   'Motor','Sistema de Transmisión','Dirección','Frenos','Suspensión','Elevavidrios',
-  'Neumáticos','Neumático de emergencia','Sistema Eléctrico','Luces','Alarma de retroceso','Bocina','Líquido de Frenos', 'Líquido Refrigerante',
-  'Líquido Hidráulico','Carrocería','Seguridad (extintor, conos)','Sistema de Combustible','Limpieza'
+  'Neumáticos','Sistema Eléctrico','Luces','Alarma de retroceso','Frenos', 'Refrigerante',
+  'Hidráulico','Carrocería','Seguridad (extintor, conos)','Sistema de Combustible','Limpieza'
 ];
 const STATUS_OPTS = [
   {v:'OK', t:'OK'},
