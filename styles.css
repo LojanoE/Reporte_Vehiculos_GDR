@@ -4,7 +4,7 @@ html, body { background:#0b1220; color:#e5e7eb; }
 .chip { border:1px solid rgba(255,255,255,.12); border-radius:9999px; padding:.15rem .6rem; font-size:.75rem; }
 .soft { box-shadow: 0 10px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06); }
 .grid-2 { display:grid; grid-template-columns: 1fr; gap:1rem; }
-@media(min-width:768px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
+@media(min-width:768px){ .grid-2{ grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); } }
 .sys-select { appearance:none; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:.5rem; padding:.4rem .6rem; width:100%; }
 .sys-note { background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.15); border-radius:.5rem; padding:.4rem .6rem; width:100%; }
 .thumb { aspect-ratio: 4/3; object-fit:cover; border-radius:.75rem; border:1px solid rgba(255,255,255,.12); background:#0a1020; }
