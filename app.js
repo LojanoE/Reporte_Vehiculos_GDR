@@ -269,8 +269,10 @@ if (btnGenerar) btnGenerar.addEventListener('click', ()=>{
   saveDraft();
   informeGenerado = true;
   
-  // Ejecutar la impresión inmediatamente en respuesta al clic del usuario
-  window.print();
+  // Ejecutar la impresión con un breve retraso para que el título se actualice
+  setTimeout(() => {
+    window.print();
+  }, 200);
 });
 
 // Modificar el botón de imprimir para que imprima directamente si el informe ya fue generado
