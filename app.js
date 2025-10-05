@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         botResponse = `
           <p>¡Claro! Aquí te explico cómo llenar la sección de <strong>Datos Generales</strong>:</p>
           <ul>
-            <li><strong>Código del vehículo:</strong> Ingresa el identificador único. Ej: <code>ECO62 ECO04 ECO05</code>, <code>CAM-01</code>.</li>
+            <li><strong>Código del vehículo:</strong> Ingresa el identificador único. Ej: <code>ECO62, ECO04, ECO05</code>, <code>CAM-01</code>.</li>
             <li><strong>Placa:</strong> Escribe la placa del vehículo. Ej: <code>ABC 1234</code>.</li>
             <li><strong>Kilometraje actual:</strong> Pon el número sin puntos ni comas. Ej: <code>123456</code>.</li>
             <li><strong>Conductor:</strong> Tu nombre completo.</li>
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p>El <strong>Estado del Vehículo</strong> define su condición final tras la revisión:</p>
           <ul>
             <li><strong style="color: #16a34a;">OPERATIVO:</strong> El vehículo se puede operar sin problemas.</li>
-            <li><strong style="color: #ef4444;">MANT. PREVENTIVO:</strong> Se que necesita un cambio de aceite. El vehículo entrará al taller y no puede usarse hasta entonces.</li>
+            <li><strong style="color: #ef4444;">MANT. PREVENTIVO:</strong> Se que necesita un cambio de aceite y filtros. El vehículo entrará al taller y no puede usarse hasta entonces.</li>
             <li><strong style="color: #ef4444;">MANT. CORRECTIVO:</strong> Se encontró una falla importante. El vehículo debe ir a mecánica para ser reparado y no debe usarse hasta entonces.</li>
           </ul>
         `;
