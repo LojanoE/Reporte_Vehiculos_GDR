@@ -305,6 +305,32 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     border-color: #000 !important;
   }
 }
+
+/* Safari-specific print styles to remove headers and footers */
+@media print {
+  @page {
+    margin: 0.5cm;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  
+  /* Specific rule to prevent Safari from adding URL, date, and page numbers */
+  @page :header { 
+    display: none !important;
+    content: "" !important;
+  }
+  
+  @page :footer { 
+    display: none !important;
+    content: "" !important;
+  }
+  
+  /* Additional rules for Safari */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
 /* Tablets y móviles grandes */
 @media (max-width: 900px) {
   .kpi-card .logo-bar .rdv-logo {
