@@ -1,3 +1,4 @@
+
 :root { --ink:#0f172a; --muted:#334155; --brand:#0ea5e9; --ok:#16a34a; --warn:#f59e0b; --crit:#ef4444; }
 html, body { background:#0b1220; color:#e5e7eb; }
 .card { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.08); border-radius: 1rem; }
@@ -464,5 +465,15 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 @media print {
   #chatbot-container, #chatbot-toggler {
     display: none !important;
+  }
+}
+
+/* Eliminar encabezado y pie de página del navegador al imprimir */
+@media print {
+  @page {
+    margin: 0;
+  }
+  body {
+    margin: 1.5cm;
   }
 }
