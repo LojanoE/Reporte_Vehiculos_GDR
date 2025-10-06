@@ -467,13 +467,3 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     display: none !important;
   }
 }
-
-/* Eliminar encabezado y pie de página del navegador al imprimir */
-@media print {
-  @page {
-    margin: 0 !important;
-  }
-  body {
-    margin: 1.5cm !important;
-  }
-}
