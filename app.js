@@ -51,7 +51,7 @@ if (tbody){
 
 // Form elements
 const form = $('#rdvForm');
-const cod = $('#cod'), placa = $('#placa'), km = $('#km'), fecha = $('#fecha');
+const codSelect = $('#codSelect'), cod = $('#cod'), placa = $('#placa'), km = $('#km'), fecha = $('#fecha');
 const conductor = $('#conductor'), inspector = $('#inspector'), ubicacion = $('#ubicacion');
 const obsGeneral = $('#obsGeneral');
 const foto1 = $('#foto1'), foto2 = $('#foto2'), prev1 = $('#prev1'), prev2 = $('#prev2');
@@ -72,8 +72,15 @@ const vehiclePlateMap = {
   'BZ-01': 'Sin placa'
 };
 
+// Available vehicle codes for the dropdown
+const AVAILABLE_CODES = Object.keys(vehiclePlateMap);
+
 // Defaults
 if (fecha) fecha.value = nowLocal();
+if (cod) {
+  cod.disabled = true; // Initially disable the input field
+  cod.classList.add('hidden'); // Initially hide the input field
+}
 
 
 // === Generador del código RDV: AÑOMES-CODVEH-RDV-0DÍA
@@ -81,7 +88,12 @@ function generateCode(baseDate){
   const d = baseDate || (fecha && fecha.value ? new Date(fecha.value) : new Date());
   const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
   // En vez de "GDR" usar el código de vehículo ingresado
-  const veh = (cod && cod.value ? cod.value.trim().toUpperCase() : 'GDR');
+  let veh = 'GDR';
+  if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
+    veh = codSelect.value;
+  } else if (cod && cod.value) {
+    veh = cod.value.trim().toUpperCase();
+  }
   // Formato: 2509-ECO62-RDV-009 (si no hay código, queda GDR como respaldo)
   return `${y}${m}-${veh}-RDV-0${day}-V0`;
 }
@@ -93,7 +105,7 @@ const updateLiveCode = () => {
   if (liveCodigo) liveCodigo.textContent = code;
   // Autocompletar placa
   if (cod && placa) {
-    const vehicleCode = cod.value.trim().toUpperCase();
+    const vehicleCode = cod.value.toUpperCase();
     placa.value = vehiclePlateMap[vehicleCode] || '';
   }
   return code;
@@ -101,6 +113,19 @@ const updateLiveCode = () => {
 
 // Events
 if (cod) cod.addEventListener('input', e => { cod.value = cod.value.toUpperCase(); updateLiveCode(); saveDraft(); });
+if (codSelect) codSelect.addEventListener('change', e => { 
+  if (codSelect.value === 'OTRO') {
+    cod.disabled = false;
+    cod.classList.remove('hidden');
+    cod.focus();
+  } else {
+    cod.value = codSelect.value;
+    cod.disabled = true;
+    cod.classList.add('hidden');
+    updateLiveCode();
+    saveDraft();
+  }
+});
 if (fecha) fecha.addEventListener('change', ()=> { updateLiveCode(); saveDraft(); });
 [placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el && el.addEventListener('input', saveDraft));
 $$('select[id^=sys-]').forEach(el => el.addEventListener('change', ()=>{
@@ -148,8 +173,16 @@ if (foto2) foto2.addEventListener('change', (e)=>{
 const KEY = 'RDV_GDR_DRAFT';
 function saveDraft(){
   const sys = $$('select[id^=sys-]').map(s => ({name: s.dataset.sys, val: s.value, note: $(`#${s.id.replace('-sel','-note')}`).value || ''}));
+  let selectedCod = '';
+  if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
+    selectedCod = codSelect.value;
+  } else if (cod && cod.value) {
+    selectedCod = cod.value;
+  }
   const data = {
-    cod: cod && cod.value || '', placa: placa && placa.value || '', km: km && km.value || '', fecha: fecha && fecha.value || '',
+    cod: selectedCod || '', 
+    codSelect: codSelect ? codSelect.value : '', 
+    placa: placa && placa.value || '', km: km && km.value || '', fecha: fecha && fecha.value || '',
     conductor: conductor && conductor.value || '', inspector: inspector && inspector.value || '', ubicacion: ubicacion && ubicacion.value || '',
     obsGeneral: obsGeneral && obsGeneral.value || '', apto: aptoSi && aptoSi.checked ? 'SI' : 'NO',
     sys, foto1Data, foto2Data, _t: new Date().toLocaleString()
@@ -168,6 +201,11 @@ function loadDraft(){
       if (prev1) prev1.classList.add('hidden');
       if (prev2) prev2.classList.add('hidden');
       if (fecha) fecha.value = nowLocal();
+      if (codSelect) codSelect.value = '';
+      if (cod) {
+        cod.disabled = false;
+        cod.value = '';
+      }
       updateLiveCode();
       if (btnImprimir) {
         btnImprimir.disabled = true;
@@ -181,7 +219,34 @@ function loadDraft(){
   if (!raw) return;
   try {
     const d = JSON.parse(raw);
-    if (cod) cod.value = d.cod || '';
+    if (codSelect && d.codSelect) {
+      codSelect.value = d.codSelect;
+      if (d.codSelect === 'OTRO' && d.cod) {
+        if (cod) {
+          cod.disabled = false;
+          cod.value = d.cod;
+          cod.classList.remove('hidden');
+        }
+      } else if (d.codSelect !== 'OTRO') {
+        if (cod) {
+          cod.disabled = true;
+          cod.value = d.codSelect;
+          cod.classList.add('hidden');
+        }
+      }
+    } else if (cod && d.cod) {
+      // In case the saved draft doesn't have codSelect but has cod value
+      cod.value = d.cod;
+      if (AVAILABLE_CODES.includes(d.cod)) {
+        codSelect.value = d.cod;
+        cod.disabled = true;
+        cod.classList.add('hidden');
+      } else {
+        codSelect.value = 'OTRO';
+        cod.disabled = false;
+        cod.classList.remove('hidden');
+      }
+    }
     if (placa) placa.value = d.placa || '';
     if (km) km.value = d.km || '';
     if (fecha) fecha.value = d.fecha || nowLocal();
@@ -214,7 +279,14 @@ loadDraft();
 
 // Generate Report
 function validar(){
-  if (!cod || !cod.value.trim()) return 'Código del vehículo es obligatorio.';
+  let vehicleCode = '';
+  if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
+    vehicleCode = codSelect.value;
+  } else if (cod && cod.value) {
+    vehicleCode = cod.value.trim().toUpperCase();
+  }
+  
+  if (!vehicleCode) return 'Código del vehículo es obligatorio.';
   if (!placa || !placa.value.trim()) return 'La placa es obligatoria.';
   if (!km || !km.value || Number(km.value) < 0) return 'Kilometraje inválido.';
   if (!fecha || !fecha.value) return 'Fecha/hora obligatoria.';
@@ -229,7 +301,13 @@ function fillReport(){
   $('#rep-fecha').textContent = formatDateTime(fecha.value);
   const repApto = $('#rep-apto'); repApto.textContent = aptoSi && aptoSi.checked ? 'OPERATIVO' : (aptoNo && aptoNo.checked ? 'MANT. PREVENTIVO' : 'MANT. CORRECTIVO');
   repApto.style.color = aptoSi && aptoSi.checked ? 'green' : 'red';
-  $('#rep-cod').textContent = (cod && cod.value || '').toUpperCase();
+  let displayCode = '';
+  if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
+    displayCode = codSelect.value;
+  } else if (cod && cod.value) {
+    displayCode = cod.value.toUpperCase();
+  }
+  $('#rep-cod').textContent = displayCode;
   $('#rep-placa').textContent = (placa && placa.value || '').toUpperCase();
   $('#rep-km').textContent = Number(km && km.value || 0).toLocaleString();
   $('#rep-arch').textContent = generateCode();  // código del archivo en lugar de ubicación
@@ -297,6 +375,12 @@ if (btnLimpiar) btnLimpiar.addEventListener('click', ()=>{
   foto1Data = null; foto2Data = null;
   if (prev1) prev1.classList.add('hidden'); if (prev2) prev2.classList.add('hidden');
   if (fecha) fecha.value = nowLocal();
+  if (codSelect) codSelect.value = '';
+  if (cod) {
+    cod.disabled = false;
+    cod.value = '';
+    cod.classList.add('hidden');
+  }
   updateLiveCode();
   if (btnImprimir) {
     btnImprimir.disabled = true;

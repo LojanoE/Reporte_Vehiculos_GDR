@@ -36,7 +36,22 @@
       <div class="grid-2">
         <div class="space-y-3">
           <label class="block text-sm">Código del vehículo <span class="text-red-400">*</span>
-            <input id="cod" required maxlength="25" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="ECO62, CAM-01, etc.">
+            <div class="flex gap-2 mt-1">
+              <select id="codSelect" class="w-2/3 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+                <option value="" disabled selected>Seleccionar código</option>
+                <option value="ECO04">ECO04</option>
+                <option value="ECO05">ECO05</option>
+                <option value="ECO06">ECO06</option>
+                <option value="ECO23">ECO23</option>
+                <option value="ECO26">ECO26</option>
+                <option value="ECO36">ECO36</option>
+                <option value="ECO62">ECO62</option>
+                <option value="GE-16">GE-16</option>
+                <option value="BZ-01">BZ-01</option>
+                <option value="OTRO">Otro...</option>
+              </select>
+              <input id="cod" required maxlength="25" class="w-1/3 mt-0 bg-black/30 border border-white/15 rounded-lg px-3 py-2 hidden" placeholder="Código">
+            </div>
           </label>
           <label class="block text-sm">Placa <span class="text-red-400">*</span>
             <input id="placa" required maxlength="20" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="ABC-1234">
