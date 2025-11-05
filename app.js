@@ -68,7 +68,7 @@ const vehiclePlateMap = {
   'ECO26': 'PDI 5814',
   'ECO36': 'PDI 5771',
   'ECO62': 'ZBA 1564',
-  'M01': 'PDX 9943',
+  'M01': 'PCX 9943',
   'GE-16': 'Sin placa',
   'BZ-01': 'Sin placa'
 };
