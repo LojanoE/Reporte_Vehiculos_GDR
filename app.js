@@ -82,9 +82,13 @@ const MAINTENANCE_ALERTS = {
     caja: 93271
   },
   'ECO62': {
-    motor: 25000,
-    caja: 25000
-  }
+    motor: 21210,
+    caja: 21210
+  },
+  'ECO26': {
+    motor: 134008,
+    caja: 138536
+  },
 };
 const ALERT_RANGE = 200;
 
