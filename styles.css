@@ -328,7 +328,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   /* Additional rules for Safari */
   * {
     -webkit-print-color-adjust: exact !important;
-    color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 /* Tablets y móviles grandes */
