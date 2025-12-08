@@ -58,6 +58,7 @@ const foto1 = $('#foto1'), foto2 = $('#foto2'), prev1 = $('#prev1'), prev2 = $('
 const aptoSi = $('#aptoSi'), aptoNo = $('#aptoNo');
 const liveCodigo = $('#liveCodigo');
 const btnGenerar = $('#btnGenerar'), btnImprimir = $('#btnImprimir'), btnLimpiar = $('#btnLimpiar');
+const kmWarning = $('#kmWarning');
 
 // Mapa de códigos de vehículo a placas
 const vehiclePlateMap = {
@@ -74,6 +75,18 @@ const vehiclePlateMap = {
   'GE-16': 'Sin placa',
   'BZ-01': 'Sin placa'
 };
+
+const MAINTENANCE_ALERTS = {
+  'ECO23': {
+    motor: 8346,
+    caja: 93271
+  },
+  'ECO62': {
+    motor: 25000,
+    caja: 25000
+  }
+};
+const ALERT_RANGE = 200;
 
 // Available vehicle codes for the dropdown
 const AVAILABLE_CODES = Object.keys(vehiclePlateMap);
@@ -101,7 +114,57 @@ function generateCode(baseDate){
   return `${y}${m}-${veh}-RDV-0${day}-V0`;
 }
 
+function checkMaintenance() {
+  if (!kmWarning) return;
+  kmWarning.classList.add('hidden');
+  kmWarning.textContent = '';
+  
+  let code = '';
+  if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
+    code = codSelect.value;
+  } else if (cod && cod.value) {
+    code = cod.value.toUpperCase();
+  }
+  
+  const vehicleAlerts = MAINTENANCE_ALERTS[code];
+  if (!vehicleAlerts) return; // No specific alerts for this vehicle
+  
+  const currentKm = parseInt(km.value, 10);
+  if (isNaN(currentKm)) return;
 
+  const msgs = []; // For upcoming maintenance
+  const pastDueMsgs = []; // For maintenance passed by 100km
+
+  // Check for motor maintenance
+  if (vehicleAlerts.motor) {
+    const motorTarget = vehicleAlerts.motor;
+    if (currentKm >= (motorTarget - ALERT_RANGE) && currentKm <= motorTarget) {
+      msgs.push(`⚠️ Mantenimiento de MOTOR próximo (${motorTarget - currentKm} km para ${motorTarget})`);
+    } else if (currentKm > motorTarget + 100) {
+      pastDueMsgs.push(`🚫 Mantenimiento de MOTOR (target ${motorTarget}km) excedido por ${currentKm - motorTarget}km. Contactar para actualizar.`);
+    }
+  }
+
+  // Check for gearbox/crown maintenance
+  if (vehicleAlerts.caja) {
+    const cajaTarget = vehicleAlerts.caja;
+    if (currentKm >= (cajaTarget - ALERT_RANGE) && currentKm <= cajaTarget) {
+      msgs.push(`⚠️ Mantenimiento de CAJA/CORONA próximo (${cajaTarget - currentKm} km para ${cajaTarget})`);
+    } else if (currentKm > cajaTarget + 100) {
+      pastDueMsgs.push(`🚫 Mantenimiento de CAJA/CORONA (target ${cajaTarget}km) excedido por ${currentKm - cajaTarget}km. Contactar para actualizar: Estanislao L (LSM) o Kathy R.(LSM)`);
+    }
+  }
+  
+  if (pastDueMsgs.length > 0) {
+    kmWarning.textContent = pastDueMsgs.join(' | ');
+    kmWarning.classList.remove('hidden');
+    showToast(pastDueMsgs[0]);
+  } else if (msgs.length > 0) {
+    kmWarning.textContent = msgs.join(' | ');
+    kmWarning.classList.remove('hidden');
+    showToast(msgs[0]);
+  }
+}
 
 const updateLiveCode = () => {
   const code = generateCode();
@@ -115,7 +178,7 @@ const updateLiveCode = () => {
 };
 
 // Events
-if (cod) cod.addEventListener('input', e => { cod.value = cod.value.toUpperCase(); updateLiveCode(); saveDraft(); });
+if (cod) cod.addEventListener('input', e => { cod.value = cod.value.toUpperCase(); updateLiveCode(); checkMaintenance(); saveDraft(); });
 if (codSelect) codSelect.addEventListener('change', e => { 
   if (codSelect.value === 'OTRO') {
     cod.disabled = false;
@@ -126,11 +189,12 @@ if (codSelect) codSelect.addEventListener('change', e => {
     cod.disabled = true;
     cod.classList.add('hidden');
     updateLiveCode();
+    checkMaintenance();
     saveDraft();
   }
 });
 if (fecha) fecha.addEventListener('change', ()=> { updateLiveCode(); saveDraft(); });
-[placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el && el.addEventListener('input', saveDraft));
+[placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el && el.addEventListener('input', () => { if(el === km) checkMaintenance(); saveDraft(); }));
 $$('select[id^=sys-]').forEach(el => el.addEventListener('change', ()=>{
   const anyCritical = $$('select[id^=sys-]').some(s=> s.value==='CRI');
   if (anyCritical && aptoNo) aptoNo.checked = true;
@@ -270,6 +334,7 @@ function loadDraft(){
     if (foto1Data && prev1) { prev1.src = foto1Data; prev1.classList.remove('hidden'); }
     if (foto2Data && prev2) { prev2.src = foto2Data; prev2.classList.remove('hidden'); }
     updateLiveCode();
+    checkMaintenance();
     
     // If the draft contains data, enable the print button and apply yellow styling
     if (btnImprimir) {
