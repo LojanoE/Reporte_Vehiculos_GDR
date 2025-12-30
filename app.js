@@ -89,6 +89,10 @@ const MAINTENANCE_ALERTS = {
     motor: 134008,
     caja: 138536
   },
+  'ECO70': {
+    motor: 6000,
+    caja: 10000
+  }
 };
 const ALERT_RANGE = 200;
 
