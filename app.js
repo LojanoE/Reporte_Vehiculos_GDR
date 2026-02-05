@@ -90,7 +90,7 @@ const MAINTENANCE_ALERTS = {
     caja: 144044
   },
   'ECO70': {
-    motor: 5000,
+    motor: 10000,
     caja: 20000
   },
   'ECO71': {
