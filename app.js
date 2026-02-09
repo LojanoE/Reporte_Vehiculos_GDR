@@ -106,7 +106,7 @@ const MAINTENANCE_ALERTS = {
     caja: 182562
   },  
 };
-const ALERT_RANGE = 200;
+const ALERT_RANGE = 4000;
 
 // Available vehicle codes for the dropdown
 const AVAILABLE_CODES = Object.keys(vehiclePlateMap);
