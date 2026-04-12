@@ -72,7 +72,6 @@ const vehiclePlateMap = {
   'ECO70': 'ABQ 2836',
   'ECO71': 'ABQ 2837',
   'M01': 'PCX 9943',
-  'C-10': 'GSS 7270',
   'GE-16': 'Sin placa',
   'BZ-01': 'Sin placa'
 };
