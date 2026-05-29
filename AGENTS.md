@@ -8,7 +8,7 @@
 
 ## Deployment
 - Hosted on **GitHub Pages**. `.nojekyll` at root disables Jekyll processing.
-- **Cache busting:** `index.html` references `styles.css?v=260330-14` and `app.js?v=260330-14`. Bump the query string when editing those files so browsers load the new version.
+- **Cache busting:** `index.html` references `styles.css?v=260529-01` and `app.js?v=260529-01`. Bump the query string when editing those files so browsers load the new version.
 
 ## Architecture
 - **Entry:** `index.html` (form UI + printable report layout + chatbot markup)
@@ -37,7 +37,8 @@
 - The report is a hidden DOM section (`#report`) shown via CSS `@media print`.
 - `styles.css` has aggressive print overrides to force white background/black text because the UI is dark mode.
 - Any CSS change that affects `#report`, `.rep-card`, `.rep-table`, or `.print-grid` must be verified with **Ctrl+P → Print to PDF**.
-- Report code format: `YYMM-<vehicle>-RDV-0<DAY>-V0`
+- Report code format: `YYMM-<vehicle>-RDV-0<DAY>-V<version>`
+  - `<version>` is `V0` before 18:00, `V1` at 18:00 or later (determined by `fecha` field hour in `generateCode()`).
 
 ## Existing Docs
 - `GEMINI.md` and `QWEN.md` contain longer project descriptions. Treat them as background, not source of truth; executable behavior lives in `app.js` and `styles.css`.
