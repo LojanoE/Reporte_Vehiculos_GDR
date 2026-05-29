@@ -130,8 +130,9 @@ function generateCode(baseDate){
   } else if (cod && cod.value) {
     veh = cod.value.trim().toUpperCase();
   }
-  // Formato: 2509-ECO62-RDV-009 (si no hay código, queda GDR como respaldo)
-  return `${y}${m}-${veh}-RDV-0${day}-V0`;
+  // Formato: 2509-ECO62-RDV-009-V0 (V1 si es después de las 18:00)
+  const version = d.getHours() >= 18 ? 'V1' : 'V0';
+  return `${y}${m}-${veh}-RDV-0${day}-${version}`;
 }
 
 function checkMaintenance() {
