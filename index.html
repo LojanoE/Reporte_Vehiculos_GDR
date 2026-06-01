@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RDV—GDR</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=260529-01">
+  <link rel="stylesheet" href="styles.css?v=260601-02">
 </head>
 <body>
   <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-2">
@@ -32,13 +32,13 @@
 
     <!-- ====== FORM ====== -->
     <form id="rdvForm" class="card soft p-4 md:p-6 space-y-6 no-print">
-      <h2 class="text-xl font-semibold">1) Datos generales</h2>
+      <h2 class="text-xl font-semibold" data-i18n="section1Title">1) Datos generales</h2>
       <div class="grid-2">
         <div class="space-y-3">
-          <label class="block text-sm">Código del vehículo <span class="text-red-400">*</span>
+          <label class="block text-sm"><span data-i18n="codigoLabel">Código del vehículo</span> <span class="text-red-400">*</span>
             <div class="flex gap-2 mt-1">
               <select id="codSelect" class="w-2/3 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
-                <option value="" disabled selected>Seleccionar código</option>
+                <option value="" disabled selected data-i18n="codigoPlaceholderSelect">Seleccionar código</option>
                 <option value="ECO04">ECO04</option>
                 <option value="ECO05">ECO05</option>
                 <option value="ECO06">ECO06</option>
@@ -56,40 +56,40 @@
               <input id="cod" required maxlength="25" class="w-1/3 mt-0 bg-black/30 border border-white/15 rounded-lg px-3 py-2 hidden" placeholder="Código">
             </div>
           </label>
-          <label class="block text-sm">Placa <span class="text-red-400">*</span>
+          <label class="block text-sm"><span data-i18n="placaLabel">Placa</span> <span class="text-red-400">*</span>
             <input id="placa" required maxlength="20" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="ABC-1234">
           </label>
-          <label class="block text-sm">Kilometraje actual <span class="text-red-400">*</span>
+          <label class="block text-sm"><span data-i18n="kmLabel">Kilometraje actual</span> <span class="text-red-400">*</span>
             <input id="km" type="number" min="0" step="1" required class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="123456">
             <div id="kmWarning" class="text-yellow-400 font-bold text-xs mt-1 hidden"></div>
           </label>
         </div>
         <div class="space-y-3">
-          <label class="block text-sm">Fecha y hora de la revisión <span class="text-red-400">*</span>
+          <label class="block text-sm"><span data-i18n="fechaLabel">Fecha y hora de la revisión</span> <span class="text-red-400">*</span>
             <input id="fecha" type="datetime-local" required class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
           </label>
-          <label class="block text-sm">Conductor responsable
+          <label class="block text-sm" data-i18n="conductorLabel">Conductor responsable
             <input id="conductor" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Nombre completo">
           </label>
-          <label class="block text-sm">Inspector / Gestor GDR
+          <label class="block text-sm" data-i18n="inspectorLabel">Inspector / Gestor GDR
             <input id="inspector" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Nombre completo">
           </label>
-          <label class="block text-sm">Ubicación
+          <label class="block text-sm" data-i18n="ubicacionLabel">Ubicación
             <input id="ubicacion" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Ciudad / Frente / Taller">
           </label>
         </div>
       </div>
 
-      <h2 class="text-xl font-semibold">2) Evaluación de sistemas</h2>
-      <p class="note">Marca el estado de cada sistema. Si seleccionas <span class="text-yellow-400 font-semibold">Atención</span> o <span class="text-red-400 font-semibold">Crítico</span>, agrega una observación.</p>
+      <h2 class="text-xl font-semibold" data-i18n="section2Title">2) Evaluación de sistemas</h2>
+      <p class="note" data-i18n="evalNote">Marca el estado de cada sistema. Si seleccionas <span class="text-yellow-400 font-semibold">Atención</span> o <span class="text-red-400 font-semibold">Crítico</span>, agrega una observación.</p>
 
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm border border-white/10 rounded-lg overflow-hidden">
           <thead class="bg-white/10">
             <tr>
-              <th class="text-left p-2">Sistema</th>
-              <th class="text-left p-2">Estado</th>
-              <th class="text-left p-2">Observación (opcional)</th>
+              <th class="text-left p-2" data-i18n="tableSistema">Sistema</th>
+              <th class="text-left p-2" data-i18n="tableEstado">Estado</th>
+              <th class="text-left p-2" data-i18n="tableObservacion">Observación (opcional)</th>
             </tr>
           </thead>
           <tbody id="sysTableBody" class="divide-y divide-white/10">
@@ -100,45 +100,45 @@
 
       <div class="grid-2">
         <fieldset class="space-y-2">
-          <legend class="text-sm font-semibold">ESTADO</legend>
+          <legend class="text-sm font-semibold" data-i18n="estadoLegend">ESTADO</legend>
           <label class="inline-flex items-center gap-2">
             <input type="radio" name="apto" id="aptoSi" value="SI" class="accent-emerald-400" checked>
-            <span class="text-emerald-400 font-semibold">OPERATIVO</span>
+            <span class="text-emerald-400 font-semibold" data-i18n="radioOperativo">OPERATIVO</span>
           </label>
           <label class="inline-flex items-center gap-2">
             <input type="radio" name="apto" id="aptoNo" value="NO" class="accent-rose-500">
-            <span class="text-rose-400 font-semibold">MANT. PREVENTIVO</span>
+            <span class="text-rose-400 font-semibold" data-i18n="radioPreventivo">MANT. PREVENTIVO</span>
           </label>
           <label class="inline-flex items-center gap-2">
-            <input type="radio" name="apto" id="aptoNo" value="NO" class="accent-rose-500">
-            <span class="text-rose-400 font-semibold">MANT. CORRECTIVO</span>
+            <input type="radio" name="apto" id="aptoNo2" value="NO" class="accent-rose-500">
+            <span class="text-rose-400 font-semibold" data-i18n="radioCorrectivo">MANT. CORRECTIVO</span>
           </label>
         </fieldset>
 
         <div class="space-y-2">
-          <label class="block text-sm">Observaciones generales</label>
+          <label class="block text-sm" data-i18n="obsGeneralesLabel">Observaciones generales</label>
           <textarea id="obsGeneral" rows="2" class="w-full bg-black/30 border border-white/15 rounded-lg p-3" placeholder="Notas adicionales, recomendaciones, repuestos requeridos, etc."></textarea>
         </div>
       </div>
 
-      <h2 class="text-xl font-semibold">3) Evidencia fotográfica (obligatoria)</h2>
+      <h2 class="text-xl font-semibold" data-i18n="section3Title">3) Evidencia fotográfica (obligatoria)</h2>
       <div class="grid-2">
-        <label class="block text-sm">Foto 1
+        <label class="block text-sm"><span data-i18n="foto1Label">Foto 1</span>
           <input id="foto1" type="file" accept="image/*" required class="mt-1 block w-full file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500">
           <img id="prev1" class="thumb mt-2 hidden" alt="Vista previa 1">
         </label>
-        <label class="block text-sm">Foto 2
+        <label class="block text-sm"><span data-i18n="foto2Label">Foto 2</span>
           <input id="foto2" type="file" accept="image/*" required class="mt-1 block w-full file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500">
           <img id="prev2" class="thumb mt-2 hidden" alt="Vista previa 2">
         </label>
       </div>
 
       <div class="flex flex-wrap gap-2 pt-2">
-        <button id="btnGenerar" type="button" class="btn btn-primary">Generar informe</button>
-        <button id="btnImprimir" type="button" class="btn btn-ghost border-white/20 disabled:opacity-50" disabled>Compartir <span class="kbd ml-1">Ctrl/Cmd+P</span></button>
-        <button id="btnLimpiar" type="button" class="btn btn-danger">Limpiar</button>
+        <button id="btnGenerar" type="button" class="btn btn-primary" data-i18n="btnGenerar">Generar informe</button>
+        <button id="btnImprimir" type="button" class="btn btn-ghost border-white/20 disabled:opacity-50" disabled><span data-i18n="btnCompartir">Compartir</span> <span class="kbd ml-1">Ctrl/Cmd+P</span></button>
+        <button id="btnLimpiar" type="button" class="btn btn-danger" data-i18n="btnLimpiar">Limpiar</button>
       </div>
-      <p class="note">Sugerencia: después de generar el informe, presiona el botón "Imprimir / Guardar PDF". Tu navegador usará el <span class="font-mono">código RDV</span> como nombre sugerido del archivo.</p>
+      <p class="note" data-i18n="noteSugerencia">Sugerencia: después de generar el informe, presiona el botón "Imprimir / Guardar PDF". Tu navegador usará el <span class="font-mono">código RDV</span> como nombre sugerido del archivo.</p>
     </form>
 
     <!-- ====== PRINTABLE REPORT (A4) ====== -->
@@ -175,7 +175,6 @@
         </table>
       </div>
 
-      
         <!-- Observaciones generales (impresión) -->
         <div class="rep-obs-block">
           <div class="rep-obs-title">Observaciones generales</div>
@@ -192,7 +191,6 @@
             <figcaption style="font-size:12px; text-align:center;">Foto 2</figcaption>
           </figure>
         </div>
-      </div>
 
       <footer style="margin-top:8px; display:flex; gap:20px;">
         <div style="flex:1;">
@@ -208,34 +206,37 @@
 
     <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg border border-white/20 shadow-lg hidden"></div>
   </div>
-  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg border border-white/20 shadow-lg hidden"></div>
 
-    <!-- ====== CHATBOT ====== -->
-    <div id="chatbot-container" class="hidden">
-      <div id="chatbot-header">
-        <span>Asistente de Ayuda</span>
-        <button id="chatbot-close" class="text-white">&times;</button>
-      </div>
-      <div id="chatbot-body">
-        <div class="bot-message">
-          <p>¡Hola! 👋 Estoy aquí para ayudarte a llenar el formulario. ¿Sobre qué sección necesitas ayuda?</p>
-        </div>
-      </div>
-      <div id="chatbot-options">
-        <button class="chatbot-option" data-topic="datos">1) Datos generales</button>
-        <button class="chatbot-option" data-topic="sistemas">2) Evaluación de sistemas</button>
-        <button class="chatbot-option" data-topic="estado">3) Estado del vehículo</button>
-        <button class="chatbot-option" data-topic="fotos">4) Evidencia fotográfica</button>
-        
+  <!-- ====== LANGUAGE TOGGLE ====== -->
+  <button id="lang-toggle" class="no-print" title="Cambiar idioma">
+    <span>ES</span><span class="lang-sep">/</span><span class="lang-muted">中文</span>
+  </button>
+
+  <!-- ====== CHATBOT ====== -->
+  <div id="chatbot-container" class="hidden">
+    <div id="chatbot-header">
+      <span>Asistente de Ayuda</span>
+      <button id="chatbot-close" class="text-white">&times;</button>
+    </div>
+    <div id="chatbot-body">
+      <div class="bot-message">
+        <p>¡Hola! 👋 Estoy aquí para ayudarte a llenar el formulario. ¿Sobre qué sección necesitas ayuda?</p>
       </div>
     </div>
-
-    <button id="chatbot-toggler">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: white;">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
-    </button>
+    <div id="chatbot-options">
+      <button class="chatbot-option" data-topic="datos">1) Datos generales</button>
+      <button class="chatbot-option" data-topic="sistemas">2) Evaluación de sistemas</button>
+      <button class="chatbot-option" data-topic="estado">3) Estado del vehículo</button>
+      <button class="chatbot-option" data-topic="fotos">4) Evidencia fotográfica</button>
+    </div>
   </div>
-  <script src="app.js?v=260529-01"></script>
+
+  <button id="chatbot-toggler">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: white;">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  </button>
+
+  <script src="app.js?v=260601-02"></script>
 </body>
 </html>
