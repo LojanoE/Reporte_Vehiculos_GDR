@@ -452,7 +452,7 @@ const vehiclePlateMap = {
 
 const MAINTENANCE_ALERTS = {
   'ECO23': { motor: 88376, caja: 93271 },
-  'ECO62': { motor: 26652, caja: 41652 },
+  'ECO62': { motor: 31652, caja: 41652 },
   'ECO26': { motor: 134833, caja: 144044 },
   'ECO70': { motor: 20000, caja: 20000 },
   'ECO71': { motor: 15000, caja: 20000 },
