@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RDV—GDR</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=260603-07">
+  <link rel="stylesheet" href="styles.css?v=260712-01">
 </head>
 <body>
   <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-2">
@@ -123,14 +123,26 @@
 
       <h2 class="text-xl font-semibold" data-i18n="section3Title">3) Evidencia fotográfica (obligatoria)</h2>
       <div class="grid-2">
-        <label class="block text-sm"><span data-i18n="foto1Label">Foto 1</span>
-          <input id="foto1" type="file" accept="image/*" required class="mt-1 block w-full file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500">
+        <div class="block text-sm foto-group">
+          <span class="block mb-1" data-i18n="foto1Label">Foto 1</span>
+          <div class="foto-actions">
+            <label for="foto1-camera" class="btn-foto" data-i18n="fotoCamera">📷 Cámara</label>
+            <input id="foto1-camera" type="file" accept="image/*" capture="environment" class="hidden">
+            <label for="foto1-gallery" class="btn-foto" data-i18n="fotoGallery">🖼️ Galería</label>
+            <input id="foto1-gallery" type="file" accept="image/*" class="hidden">
+          </div>
           <img id="prev1" class="thumb mt-2 hidden" alt="Vista previa 1">
-        </label>
-        <label class="block text-sm"><span data-i18n="foto2Label">Foto 2</span>
-          <input id="foto2" type="file" accept="image/*" required class="mt-1 block w-full file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500">
+        </div>
+        <div class="block text-sm foto-group">
+          <span class="block mb-1" data-i18n="foto2Label">Foto 2</span>
+          <div class="foto-actions">
+            <label for="foto2-camera" class="btn-foto" data-i18n="fotoCamera">📷 Cámara</label>
+            <input id="foto2-camera" type="file" accept="image/*" capture="environment" class="hidden">
+            <label for="foto2-gallery" class="btn-foto" data-i18n="fotoGallery">🖼️ Galería</label>
+            <input id="foto2-gallery" type="file" accept="image/*" class="hidden">
+          </div>
           <img id="prev2" class="thumb mt-2 hidden" alt="Vista previa 2">
-        </label>
+        </div>
       </div>
 
       <div class="flex flex-wrap gap-2 pt-2">
@@ -237,6 +249,6 @@
     </svg>
   </button>
 
-  <script src="app.js?v=260603-07"></script>
+  <script src="app.js?v=260712-01"></script>
 </body>
 </html>

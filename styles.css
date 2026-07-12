@@ -14,6 +14,29 @@ html, body { background:#0b1220; color:#e5e7eb; }
 .btn-ghost { background:transparent; }
 .btn-danger { background:linear-gradient(180deg, #fb7185, #ef4444); color:#fff; }
 .btn-highlight { background-color: #fbbf24; color: #000; } /* Yellow highlight color */
+
+/* ====== FOTO SELECTOR (camera / gallery) ====== */
+.foto-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+.btn-foto {
+  flex:1;
+  min-width: 90px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.35rem;
+  padding:.6rem .5rem;
+  border-radius:.5rem;
+  border:1px solid rgba(255,255,255,.16);
+  background:linear-gradient(180deg, #22d3ee, #0ea5e9);
+  color:#0b1220;
+  font-weight:600;
+  font-size:.85rem;
+  text-align:center;
+  transition: filter .15s ease;
+}
+.btn-foto:hover { filter:brightness(1.1); }
+@media print { .foto-actions, .btn-foto { display:none !important; } }
 .kpi { border: 1px solid rgba(255,255,255,.12); border-radius:.75rem; padding:.4rem .6rem; }
 .kbd { border:1px solid rgba(255,255,255,.2); border-radius:.4rem; padding:.1rem .35rem; font-size:.75rem; }
 .note { color:#cbd5e1; font-size:.85rem; }

@@ -57,6 +57,8 @@ const I18N = {
     foto1Alt: 'Vista previa 1',
     foto2Label: 'Foto 2',
     foto2Alt: 'Vista previa 2',
+    fotoCamera: '📷 Cámara',
+    fotoGallery: '🖼️ Galería',
 
     btnGenerar: 'Generar informe',
     btnCompartir: 'Compartir',
@@ -80,6 +82,7 @@ const I18N = {
     valPlaca: 'La placa es obligatoria.',
     valKm: 'Kilometraje inválido.',
     valFecha: 'Fecha/hora obligatoria.',
+    valFoto: 'Las dos fotos son obligatorias.',
 
     maintMotorProx: (kmDiff, target) => `⚠️ Mantenimiento de MOTOR próximo (${kmDiff} km para ${target})`,
     maintMotorPast: (kmDiff, target) => `🚫 Mantenimiento de MOTOR (target ${target}km) excedido por ${kmDiff}km. Contactar para actualizar.`,
@@ -128,7 +131,7 @@ const I18N = {
         <li>Usa tu celular o tablet para tomar las fotos.</li>
         <li><strong>Foto 1:</strong> Una foto general del vehículo, que se vea completo.</li>
         <li><strong>Foto 2:</strong> Una foto de un detalle específico, como el tablero con el kilometraje, una llanta, o cualquier novedad que hayas reportado.</li>
-        <li>Presiona "Seleccionar archivo" y toma la foto o elígela de tu galería.</li>
+        <li>Presiona <strong>"Cámara"</strong> para tomar la foto al instante, o <strong>"Galería"</strong> para elegir una imagen ya guardada.</li>
       </ul>
     `,
     helpEstadoTitle: 'Ayuda con Estado del vehículo',
@@ -175,6 +178,8 @@ const I18N = {
     foto1Alt: '预览 1',
     foto2Label: '照片 2',
     foto2Alt: '预览 2',
+    fotoCamera: '📷 相机',
+    fotoGallery: '🖼️ 相册',
 
     btnGenerar: '生成报告',
     btnCompartir: '分享',
@@ -198,6 +203,7 @@ const I18N = {
     valPlaca: '车牌为必填项。',
     valKm: '里程无效。',
     valFecha: '日期/时间为必填项。',
+    valFoto: '两张照片均为必填项。',
 
     maintMotorProx: (kmDiff, target) => `⚠️ 发动机保养即将到期（距${target}还有${kmDiff}公里）`,
     maintMotorPast: (kmDiff, target) => `🚫 发动机保养（目标${target}公里）已超期${kmDiff}公里。请联系更新。`,
@@ -246,7 +252,7 @@ const I18N = {
         <li>使用手机或平板电脑拍照。</li>
         <li><strong>照片1：</strong>车辆全貌照片。</li>
         <li><strong>照片2：</strong>特定细节照片，如里程表、轮胎或你报告的任何异常。</li>
-        <li>点击“选择文件”并从图库中拍照或选择照片。</li>
+        <li>点击<strong>“相机”</strong>立即拍照，或点击<strong>“相册”</strong>选择已保存的图片。</li>
       </ul>
     `,
     helpEstadoTitle: '车辆状态帮助',
@@ -428,7 +434,7 @@ const form = $('#rdvForm');
 const codSelect = $('#codSelect'), cod = $('#cod'), placa = $('#placa'), km = $('#km'), fecha = $('#fecha');
 const conductor = $('#conductor'), inspector = $('#inspector'), ubicacion = $('#ubicacion');
 const obsGeneral = $('#obsGeneral');
-const foto1 = $('#foto1'), foto2 = $('#foto2'), prev1 = $('#prev1'), prev2 = $('#prev2');
+const prev1 = $('#prev1'), prev2 = $('#prev2');
 const aptoSi = $('#aptoSi'), aptoNo = $('#aptoNo');
 const liveCodigo = $('#liveCodigo');
 const btnGenerar = $('#btnGenerar'), btnImprimir = $('#btnImprimir'), btnLimpiar = $('#btnLimpiar');
@@ -590,12 +596,21 @@ async function resizeDataURL(dataURL, maxW=1400){
   });
 }
 let foto1Data = null, foto2Data = null;
-if (foto1) foto1.addEventListener('change', (e)=>{
-  if (e.target.files && e.target.files[0]) readAndPreview(e.target.files[0], prev1, (d)=>{ foto1Data = d; saveDraft(); });
-});
-if (foto2) foto2.addEventListener('change', (e)=>{
-  if (e.target.files && e.target.files[0]) readAndPreview(e.target.files[0], prev2, (d)=>{ foto2Data = d; saveDraft(); });
-});
+
+const setupFotoInput = (selector, imgEl, setData) => {
+  const el = $(selector);
+  if (!el) return;
+  el.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      readAndPreview(e.target.files[0], imgEl, (d) => { setData(d); saveDraft(); });
+    }
+  });
+};
+
+setupFotoInput('#foto1-camera', prev1, (d) => foto1Data = d);
+setupFotoInput('#foto1-gallery', prev1, (d) => foto1Data = d);
+setupFotoInput('#foto2-camera', prev2, (d) => foto2Data = d);
+setupFotoInput('#foto2-gallery', prev2, (d) => foto2Data = d);
 
 // Draft
 const KEY = 'RDV_GDR_DRAFT';
@@ -722,6 +737,7 @@ function validar(){
   if (!placa || !placa.value.trim()) return t('valPlaca');
   if (!km || !km.value || Number(km.value) < 0) return t('valKm');
   if (!fecha || !fecha.value) return t('valFecha');
+  if (!foto1Data || !foto2Data) return t('valFoto');
   return null;
 }
 function fillReport(){
