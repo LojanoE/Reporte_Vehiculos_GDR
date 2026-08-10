@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — RDV GDR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <link rel="stylesheet" href="styles.css?v=260810-01">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; }
+    .dash-card { background: rgba(30,41,59,.8); border: 1px solid rgba(255,255,255,.1); border-radius: .75rem; padding: 1rem; }
+    .dash-kpi { font-size: 2rem; font-weight: 700; }
+    .filter-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; }
+    .filter-row label { display: flex; flex-direction: column; font-size: .875rem; color: #94a3b8; }
+    .filter-row input, .filter-row select { background: rgba(15,23,42,.8); border: 1px solid rgba(255,255,255,.15); border-radius: .5rem; padding: .4rem .6rem; color: #e2e8f0; margin-top: .25rem; }
+    .chart-container { position: relative; height: 280px; }
+    .loading { color: #94a3b8; text-align: center; padding: 2rem; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th, td { padding: .5rem; border-bottom: 1px solid rgba(255,255,255,.1); text-align: left; }
+    th { color: #94a3b8; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold">Dashboard — Revisión Diaria de Vehículos</h1>
+        <p class="text-slate-400 text-sm">KPIs, tendencias y análisis de reportes</p>
+      </div>
+      <a href="index.html" class="text-sm text-emerald-400 hover:underline">← Volver al formulario</a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="dash-card">
+      <h2 class="text-lg font-semibold mb-3">Filtros</h2>
+      <div class="filter-row">
+        <label>Desde
+          <input type="date" id="filter-start">
+        </label>
+        <label>Hasta
+          <input type="date" id="filter-end">
+        </label>
+        <label>Vehículo
+          <input type="text" id="filter-vehicle" placeholder="ECO04">
+        </label>
+        <label>Estado
+          <select id="filter-status">
+            <option value="">Todos</option>
+            <option value="OPERATIVO">OPERATIVO</option>
+            <option value="MANT. PREVENTIVO">MANT. PREVENTIVO</option>
+            <option value="MANT. CORRECTIVO">MANT. CORRECTIVO</option>
+          </select>
+        </label>
+        <button id="btn-apply" class="btn btn-primary">Aplicar</button>
+        <button id="btn-reset" class="btn btn-ghost border-white/20">Limpiar</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="dash-card text-center">
+        <div class="text-slate-400 text-sm">Total reportes</div>
+        <div class="dash-kpi text-emerald-400" id="kpi-total">—</div>
+      </div>
+      <div class="dash-card text-center">
+        <div class="text-slate-400 text-sm">Reportes este mes</div>
+        <div class="dash-kpi text-blue-400" id="kpi-this-month">—</div>
+      </div>
+      <div class="dash-card text-center">
+        <div class="text-slate-400 text-sm">Fallas críticas</div>
+        <div class="dash-kpi text-red-400" id="kpi-critical">—</div>
+      </div>
+      <div class="dash-card text-center">
+        <div class="text-slate-400 text-sm">% Operativos</div>
+        <div class="dash-kpi text-emerald-400" id="kpi-operativo">—</div>
+      </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="dash-card">
+        <h3 class="font-semibold mb-2">Reportes por día</h3>
+        <div class="chart-container">
+          <canvas id="chart-reports-time"></canvas>
+        </div>
+      </div>
+      <div class="dash-card">
+        <h3 class="font-semibold mb-2">Top sistemas con fallas (Atención + Crítico)</h3>
+        <div class="chart-container">
+          <canvas id="chart-systems"></canvas>
+        </div>
+      </div>
+      <div class="dash-card">
+        <h3 class="font-semibold mb-2">Distribución de estado operativo</h3>
+        <div class="chart-container">
+          <canvas id="chart-status"></canvas>
+        </div>
+      </div>
+      <div class="dash-card">
+        <h3 class="font-semibold mb-2">Kilometraje por vehículo (último reporte)</h3>
+        <div class="chart-container">
+          <canvas id="chart-km"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="dash-card">
+      <h3 class="font-semibold mb-3">Últimos reportes</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Fecha</th>
+              <th>Vehículo</th>
+              <th>Placa</th>
+              <th>Km</th>
+              <th>Estado</th>
+              <th>Conductor</th>
+              <th>Inspector</th>
+            </tr>
+          </thead>
+          <tbody id="reports-table-body">
+            <tr><td colspan="8" class="loading">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js?v=260810-01"></script>
+  <script src="dashboard.js?v=260810-01"></script>
+</body>
+</html>

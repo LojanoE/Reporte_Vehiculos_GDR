@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RDV—GDR</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=260712-01">
+  <link rel="stylesheet" href="styles.css?v=260810-01">
 </head>
 <body>
   <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-2">
+    <div class="flex justify-end no-print mb-2">
+      <a href="dashboard.html" class="text-sm text-emerald-400 hover:underline">📊 Ver dashboard</a>
+    </div>
     <!-- ===== KPI CARD (logos + encabezado bilingüe + código) ===== -->
     <section class="card soft p-4 md:p-6 space-y-2 kpi-card">
       <div class="logo-bar">
@@ -249,6 +252,9 @@
     </svg>
   </button>
 
-  <script src="app.js?v=260712-01"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js?v=260810-01"></script>
+  <script src="offline-queue.js?v=260810-01"></script>
+  <script src="app.js?v=260810-01"></script>
 </body>
 </html>

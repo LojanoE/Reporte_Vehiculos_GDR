@@ -67,7 +67,7 @@ const I18N = {
 
     systems: [
       'Motor','Sistema de Transmisión','Dirección','Frenos','Suspensión','Elevavidrios',
-      'Neumáticos','Sistema Eléctrico','Luces','Alarma de retroceso','Frenos', 'Refrigerante',
+      'Neumáticos','Sistema Eléctrico','Luces','Alarma de retroceso','Refrigerante',
       'Hidráulico','Carrocería','Seguridad (extintor, conos)','Sistema de Combustible','Limpieza'
     ],
     statusOpts: [
@@ -188,7 +188,7 @@ const I18N = {
 
     systems: [
       '发动机','传动系统','转向系统','刹车','悬挂系统','电动车窗',
-      '轮胎','电气系统','灯光','倒车警报','刹车','冷却液',
+      '轮胎','电气系统','灯光','倒车警报','冷却液',
       '液压系统','车身','安全（灭火器、锥形桶）','燃油系统','清洁'
     ],
     statusOpts: [
@@ -781,9 +781,56 @@ function fillReport(){
   return code;
 }
 
+function getReportPayload() {
+  const d = fecha && fecha.value ? new Date(fecha.value) : new Date();
+  const code = generateCode(d);
+
+  let vehicleCode = '';
+  if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
+    vehicleCode = codSelect.value;
+  } else if (cod && cod.value) {
+    vehicleCode = cod.value.trim().toUpperCase();
+  }
+
+  const estadoOperativo = aptoSi && aptoSi.checked ? tr('repOperativo')
+    : (aptoNo && aptoNo.checked ? tr('repPreventivo') : tr('repCorrectivo'));
+
+  const systems = $$('select[id^=sys-]').map(s => {
+    const note = $(`#${s.id.replace('-sel','-note')}`)?.value || '';
+    return {
+      nombre_es: s.dataset.sysEs,
+      nombre_ui: s.dataset.sys,
+      estado: s.value || 'OK',
+      observacion: note
+    };
+  });
+
+  return {
+    header: {
+      cod_reporte: code,
+      fecha_hora: fecha.value ? new Date(fecha.value).toISOString() : new Date().toISOString(),
+      estado_operativo: estadoOperativo,
+      codigo_vehiculo: vehicleCode,
+      placa: placa && placa.value || '',
+      kilometraje: parseInt(km && km.value || '0', 10),
+      conductor: conductor && conductor.value || '',
+      inspector: inspector && inspector.value || '',
+      ubicacion: ubicacion && ubicacion.value || '',
+      obs_general: obsGeneral && obsGeneral.value || '',
+      archivo: code,
+      version: d.getHours() >= 18 ? 'V1' : 'V0'
+    },
+    systems,
+    photos: [
+      { index: 1, tiene_foto: !!foto1Data },
+      { index: 2, tiene_foto: !!foto2Data }
+    ]
+  };
+}
+
 let informeGenerado = false;
 
-if (btnGenerar) btnGenerar.addEventListener('click', ()=>{
+if (btnGenerar) btnGenerar.addEventListener('click', async ()=>{
   const err = validar();
   if (err) { alert(err); return; }
   const code = fillReport();
@@ -796,9 +843,24 @@ if (btnGenerar) btnGenerar.addEventListener('click', ()=>{
   saveDraft();
   informeGenerado = true;
 
+  // Guardar en Supabase o cola offline
+  if (typeof saveReportOnlineOrQueue === 'function') {
+    try {
+      const payload = getReportPayload();
+      const res = await saveReportOnlineOrQueue(payload);
+      if (res.synced) {
+        showToast('Reporte guardado en la nube');
+      } else if (res.queued) {
+        showToast('Sin conexión: reporte guardado localmente. Se sincronizará automáticamente.');
+      }
+    } catch (e) {
+      console.warn('No se pudo guardar en Supabase:', e);
+    }
+  }
+
   setTimeout(() => {
     window.print();
-  }, 200);
+  }, 500);
 });
 
 if (btnImprimir) btnImprimir.addEventListener('click', ()=>{
