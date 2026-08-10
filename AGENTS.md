@@ -14,6 +14,7 @@
 ## Architecture
 - **Entry / Form:** `index.html` (form UI + printable report layout + chatbot markup + language toggle)
 - **Logic:** `app.js` — validation, `localStorage` drafts, Canvas image resize, report generation, chatbot, i18n engine, Supabase save
+- **Constants:** `constants.js` — shared `MAINTENANCE_ALERTS`, `ALERT_RANGE` and status color map used by `app.js` and `dashboard.js`
 - **Supabase client:** `supabase-client.js` — initialize Supabase JS SDK and expose `saveReportToSupabase()`, `getReportsFromSupabase()`, `getStatsFromSupabase()`
 - **Offline queue:** `offline-queue.js` — IndexedDB queue (`RDV_GDR_DB`) + automatic sync when the browser comes back online
 - **Dashboard:** `dashboard.html` + `dashboard.js` — KPIs, charts (Chart.js), filters by date/vehicle/status
@@ -74,8 +75,8 @@
 
 ## Dashboard
 - URL: `dashboard.html`
-- Charts: reports per day, top systems with failures, operational-status distribution, latest mileage per vehicle.
-- Filters: date range, vehicle code, operational status.
+- Charts: reports per day, top systems with failures, operational-status distribution, latest mileage per vehicle, critical-failures trend by system, vehicle operational-status comparison (stacked bars), maintenance projection with km trend.
+- Filters: date presets (last 7 days, last month default, this month, last calendar month, this year), date range, vehicle code, operational status.
 - Uses Chart.js via CDN.
 
 ## Existing Docs

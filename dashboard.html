@@ -14,12 +14,18 @@
     .filter-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; }
     .filter-row label { display: flex; flex-direction: column; font-size: .875rem; color: #94a3b8; }
     .filter-row input, .filter-row select { background: rgba(15,23,42,.8); border: 1px solid rgba(255,255,255,.15); border-radius: .5rem; padding: .4rem .6rem; color: #e2e8f0; margin-top: .25rem; }
+    .preset-btn { background: rgba(15,23,42,.6); border: 1px solid rgba(255,255,255,.15); color: #cbd5e1; border-radius: .5rem; padding: .4rem .75rem; font-size: .875rem; cursor: pointer; }
+    .preset-btn.active { background: #059669; border-color: #059669; color: white; }
     .chart-container { position: relative; height: 280px; }
     .loading { color: #94a3b8; text-align: center; padding: 2rem; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: .875rem; }
     th, td { padding: .5rem; border-bottom: 1px solid rgba(255,255,255,.1); text-align: left; }
     th { color: #94a3b8; font-weight: 600; }
+    .badge { display: inline-block; padding: .15rem .4rem; border-radius: .375rem; font-size: .75rem; font-weight: 600; }
+    .badge-ok { background: rgba(52,211,153,.2); color: #34d399; }
+    .badge-warn { background: rgba(251,191,36,.2); color: #fbbf24; }
+    .badge-danger { background: rgba(248,113,113,.2); color: #f87171; }
   </style>
 </head>
 <body>
@@ -35,6 +41,13 @@
     <!-- Filtros -->
     <div class="dash-card">
       <h2 class="text-lg font-semibold mb-3">Filtros</h2>
+      <div class="flex flex-wrap gap-2 mb-3" id="date-presets">
+        <button class="preset-btn" data-preset="7d">Últimos 7 días</button>
+        <button class="preset-btn active" data-preset="last-month">Último mes</button>
+        <button class="preset-btn" data-preset="this-month">Este mes</button>
+        <button class="preset-btn" data-preset="last-calendar-month">Mes pasado</button>
+        <button class="preset-btn" data-preset="year">Este año</button>
+      </div>
       <div class="filter-row">
         <label>Desde
           <input type="date" id="filter-start">
@@ -59,7 +72,7 @@
     </div>
 
     <!-- KPIs -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <div class="dash-card text-center">
         <div class="text-slate-400 text-sm">Total reportes</div>
         <div class="dash-kpi text-emerald-400" id="kpi-total">—</div>
@@ -75,6 +88,10 @@
       <div class="dash-card text-center">
         <div class="text-slate-400 text-sm">% Operativos</div>
         <div class="dash-kpi text-emerald-400" id="kpi-operativo">—</div>
+      </div>
+      <div class="dash-card text-center">
+        <div class="text-slate-400 text-sm">Días sin críticas</div>
+        <div class="dash-kpi text-amber-400" id="kpi-streak">—</div>
       </div>
     </div>
 
@@ -99,10 +116,62 @@
         </div>
       </div>
       <div class="dash-card">
-        <h3 class="font-semibold mb-2">Kilometraje por vehículo (último reporte)</h3>
+        <h3 class="font-semibold mb-2">Estado operativo por vehículo</h3>
         <div class="chart-container">
-          <canvas id="chart-km"></canvas>
+          <canvas id="chart-vehicle-status"></canvas>
         </div>
+      </div>
+    </div>
+
+    <!-- Tendencia de fallas críticas -->
+    <div class="dash-card">
+      <h3 class="font-semibold mb-2">Tendencia de fallas críticas por sistema</h3>
+      <div class="chart-container">
+        <canvas id="chart-critical-trend"></canvas>
+      </div>
+    </div>
+
+    <!-- Mantenimiento próximo -->
+    <div class="dash-card">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-3">
+        <h3 class="font-semibold">Mantenimiento próximo</h3>
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-slate-400">Vehículo
+            <select id="maint-vehicle" class="ml-2 bg-slate-900 border border-white/15 rounded-lg px-2 py-1 text-sm">
+              <option value="">Seleccionar...</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap mb-4">
+        <table id="maint-table">
+          <thead>
+            <tr>
+              <th>Vehículo</th>
+              <th>Sistema</th>
+              <th>Km actual</th>
+              <th>Km objetivo</th>
+              <th>Km restantes</th>
+              <th>Fecha proyectada</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="maint-table-body">
+            <tr><td colspan="7" class="loading">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h4 class="text-sm font-semibold text-slate-300 mb-2">Tendencia de kilometraje</h4>
+      <div class="chart-container">
+        <canvas id="chart-maint-trend"></canvas>
+      </div>
+    </div>
+
+    <!-- Kilometraje por vehículo -->
+    <div class="dash-card">
+      <h3 class="font-semibold mb-2">Kilometraje por vehículo (último reporte)</h3>
+      <div class="chart-container">
+        <canvas id="chart-km"></canvas>
       </div>
     </div>
 
@@ -132,6 +201,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="constants.js?v=260810-01"></script>
   <script src="supabase-client.js?v=260810-01"></script>
   <script src="dashboard.js?v=260810-01"></script>
 </body>
