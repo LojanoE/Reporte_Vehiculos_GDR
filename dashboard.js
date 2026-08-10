@@ -20,6 +20,7 @@
     start: document.getElementById('filter-start'),
     end: document.getElementById('filter-end'),
     vehicle: document.getElementById('filter-vehicle'),
+    conductor: document.getElementById('filter-conductor'),
     status: document.getElementById('filter-status'),
     apply: document.getElementById('btn-apply'),
     reset: document.getElementById('btn-reset'),
@@ -650,6 +651,7 @@
       startDate: els.start.value || undefined,
       endDate: els.end.value || undefined,
       vehicle: els.vehicle.value.trim() || undefined,
+      conductor: els.conductor.value.trim() || undefined,
       status: els.status.value || undefined,
       limit: 5000
     };
@@ -694,6 +696,7 @@
   if (els.reset) els.reset.addEventListener('click', () => {
     setPreset('last-month');
     els.vehicle.value = '';
+    els.conductor.value = '';
     els.status.value = '';
     loadDashboard();
   });
