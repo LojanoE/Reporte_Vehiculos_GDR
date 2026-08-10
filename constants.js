@@ -18,6 +18,22 @@
 
   window.ALERT_RANGE = 4000;
 
+  // Mapa de códigos de vehículo a placas
+  window.VEHICLE_PLATE_MAP = {
+    'ECO04': 'PCX 9910',
+    'ECO05': 'PCX 9915',
+    'ECO06': 'PCX 9919',
+    'ECO23': 'PDI 5797',
+    'ECO26': 'PDI 5814',
+    'ECO36': 'PDI 5771',
+    'ECO62': 'ZBA 1564',
+    'ECO70': 'ABQ 2836',
+    'ECO71': 'ABQ 2837',
+    'M01': 'PCX 9943',
+    'GE-16': 'Sin placa',
+    'BZ-01': 'Sin placa'
+  };
+
   window.OPERATIVE_STATUSES = {
     OPERATIVO: { label: 'Operativo', color: '#34d399' },
     'MANT. PREVENTIVO': { label: 'Mant. Preventivo', color: '#fbbf24' },

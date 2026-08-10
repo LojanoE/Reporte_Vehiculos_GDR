@@ -440,8 +440,8 @@ const liveCodigo = $('#liveCodigo');
 const btnGenerar = $('#btnGenerar'), btnImprimir = $('#btnImprimir'), btnLimpiar = $('#btnLimpiar');
 const kmWarning = $('#kmWarning');
 
-// Mapa de códigos de vehículo a placas (valores fijos en español para el reporte)
-const vehiclePlateMap = {
+// Mapa de códigos de vehículo a placas (compartido en constants.js)
+const vehiclePlateMap = window.VEHICLE_PLATE_MAP || {
   'ECO04': 'PCX 9910',
   'ECO05': 'PCX 9915',
   'ECO06': 'PCX 9919',

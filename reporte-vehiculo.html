@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reporte por Vehículo — RDV GDR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+    .dash-card { background: rgba(30,41,59,.8); border: 1px solid rgba(255,255,255,.1); border-radius: .75rem; padding: 1rem; }
+    .btn { display: inline-flex; align-items: center; gap: .5rem; border-radius: .5rem; padding: .5rem 1rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: #059669; color: #fff; }
+    .btn-primary:hover { background: #047857; }
+    .btn-ghost { background: transparent; color: #e2e8f0; border: 1px solid rgba(255,255,255,.2); }
+    .btn-ghost:hover { background: rgba(255,255,255,.05); }
+    label { display: flex; flex-direction: column; font-size: .875rem; color: #94a3b8; }
+    input, select { background: rgba(15,23,42,.8); border: 1px solid rgba(255,255,255,.15); border-radius: .5rem; padding: .4rem .6rem; color: #e2e8f0; margin-top: .25rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th, td { padding: .5rem; border-bottom: 1px solid rgba(255,255,255,.1); text-align: left; vertical-align: top; }
+    th { color: #94a3b8; font-weight: 600; }
+    .table-wrap { overflow-x: auto; }
+    .badge { display: inline-block; padding: .15rem .4rem; border-radius: .375rem; font-size: .75rem; font-weight: 600; }
+    .badge-ok { background: rgba(52,211,153,.2); color: #34d399; }
+    .badge-warn { background: rgba(251,191,36,.2); color: #fbbf24; }
+    .badge-danger { background: rgba(248,113,113,.2); color: #f87171; }
+    .metric { text-align: center; padding: .75rem; }
+    .metric-value { font-size: 1.75rem; font-weight: 700; }
+    .metric-label { font-size: .75rem; color: #94a3b8; }
+    .fail-item { margin: 0 0 .25rem; }
+
+    /* ===== PRINT ===== */
+    @media print {
+      @page { size: A4; margin: 12mm; }
+      :root { color-scheme: light; }
+      body { background: #fff !important; color: #000 !important; }
+      .no-print { display: none !important; }
+      .dash-card { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; page-break-inside: avoid; }
+      th, td { border-bottom: 1px solid #ccc !important; color: #000 !important; }
+      th { color: #333 !important; background: #f3f4f6 !important; }
+      .metric-value { color: #000 !important; }
+      .metric-label { color: #555 !important; }
+      .badge-ok { background: #d1fae5 !important; color: #065f46 !important; }
+      .badge-warn { background: #fef3c7 !important; color: #92400e !important; }
+      .badge-danger { background: #fee2e2 !important; color: #991b1b !important; }
+      input, select { border: 1px solid #ccc !important; background: #fff !important; color: #000 !important; }
+      h1, h2, h3, h4 { color: #000 !important; }
+      .text-slate-400, .text-slate-300 { color: #555 !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+
+    <!-- ===== FILTROS (no imprimir) ===== -->
+    <div class="dash-card no-print">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+        <div>
+          <h1 class="text-2xl font-bold">Reporte por Vehículo</h1>
+          <p class="text-slate-400 text-sm">Historial detallado, fallas y conductores</p>
+        </div>
+        <a href="dashboard.html" class="text-sm text-emerald-400 hover:underline">← Volver al dashboard</a>
+      </div>
+      <div class="flex flex-wrap gap-3 items-end">
+        <label>Vehículo
+          <select id="f-vehicle"></select>
+        </label>
+        <label>Desde
+          <input type="date" id="f-start">
+        </label>
+        <label>Hasta
+          <input type="date" id="f-end">
+        </label>
+        <button id="btn-generate" class="btn btn-primary">Generar reporte</button>
+        <button id="btn-print" class="btn btn-ghost" disabled>🖨️ Imprimir / PDF</button>
+        <button id="btn-excel" class="btn btn-ghost" disabled>📊 Exportar Excel</button>
+      </div>
+    </div>
+
+    <!-- ===== REPORTE ===== -->
+    <div id="report-area" class="space-y-6 hidden">
+
+      <!-- Encabezado -->
+      <div class="dash-card">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+          <div>
+            <h2 class="text-xl font-bold" id="rep-title">Reporte de vehículo</h2>
+            <p class="text-slate-400 text-sm" id="rep-subtitle"></p>
+          </div>
+          <div class="text-sm text-slate-400" id="rep-generated"></div>
+        </div>
+      </div>
+
+      <!-- Métricas principales -->
+      <div class="dash-card">
+        <h3 class="font-semibold mb-3">Métricas del período</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+          <div class="metric"><div class="metric-value text-emerald-400" id="m-total">—</div><div class="metric-label">Reportes</div></div>
+          <div class="metric"><div class="metric-value text-blue-400" id="m-km-range">—</div><div class="metric-label">Km recorridos</div></div>
+          <div class="metric"><div class="metric-value text-emerald-400" id="m-operativo">—</div><div class="metric-label">% Operativo</div></div>
+          <div class="metric"><div class="metric-value text-yellow-400" id="m-atencion">—</div><div class="metric-label">En atención</div></div>
+          <div class="metric"><div class="metric-value text-red-400" id="m-criticas">—</div><div class="metric-label">Fallas críticas</div></div>
+          <div class="metric"><div class="metric-value text-amber-400" id="m-streak">—</div><div class="metric-label">Días sin críticas</div></div>
+          <div class="metric"><div class="metric-value text-purple-400" id="m-drivers">—</div><div class="metric-label">Conductores</div></div>
+        </div>
+      </div>
+
+      <!-- Dos columnas: conductores + fallas por sistema -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="dash-card">
+          <h3 class="font-semibold mb-3">Reportes por conductor</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Conductor</th><th>Reportes</th><th>% del total</th></tr></thead>
+              <tbody id="tbl-drivers"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="dash-card">
+          <h3 class="font-semibold mb-3">Fallas por sistema</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Sistema</th><th>Atención</th><th>Crítico</th><th>Total</th></tr></thead>
+              <tbody id="tbl-systems"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalle de reportes -->
+      <div class="dash-card">
+        <h3 class="font-semibold mb-3">Detalle de reportes (solo fallas)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:11%;">Fecha</th>
+                <th style="width:13%;">Conductor</th>
+                <th style="width:11%;">Inspector</th>
+                <th style="width:8%;">Km</th>
+                <th style="width:12%;">Estado</th>
+                <th>Sistemas con falla / Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-detail"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="empty-msg" class="dash-card text-center text-slate-400">
+      Selecciona un vehículo y un rango de fechas, luego presiona <strong>Generar reporte</strong>.
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="constants.js?v=260810-01"></script>
+  <script src="supabase-client.js?v=260810-01"></script>
+  <script src="reporte-vehiculo.js?v=260810-01"></script>
+</body>
+</html>
