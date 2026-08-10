@@ -79,5 +79,15 @@
 - Filters: date presets (last 7 days, last month default, this month, last calendar month, this year), date range, vehicle code, operational status.
 - Uses Chart.js via CDN.
 
+## Vehicle Report
+- URL: `reporte-vehiculo.html` (supports `?vehiculo=ECO71` query param to auto-generate).
+- Default range: last 90 days from today.
+- Shows only failures (OBS/CRI) per report, never OK systems.
+- Metrics: total reports, km traveled, % operative, OBS/CRI counts, days without criticals, distinct drivers.
+- Tables: reports per driver, failures per system, detailed report list with failure observations.
+- **Print:** `window.print()` with A4 print CSS (white background) for PDF output.
+- **Excel export:** SheetJS (`xlsx`) via cdnjs CDN; 4 sheets (Resumen, Detalle, Conductores, Fallas por sistema).
+- Linked from `dashboard.html` header.
+
 ## Existing Docs
 - `GEMINI.md` contains a longer project description. Treat it as background, not source of truth; executable behavior lives in `app.js`, `dashboard.js`, `supabase-client.js`, `offline-queue.js`, and `styles.css`.
