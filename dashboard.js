@@ -6,6 +6,62 @@
 (function () {
   'use strict';
 
+  // ====== ADMIN AUTH GATE ======
+  const ADMIN_HASH = '710c83b610f56dbaeec7b72e9a04e5fc6da450df6ff9b313f0f3b6fb3fcd11ba'; // SHA-256
+  const AUTH_KEY = 'RDV_GDR_ADMIN';
+
+  async function sha256(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function showLogin() {
+    document.getElementById('login-overlay').classList.remove('hidden');
+    document.getElementById('dashboard-content').style.visibility = 'hidden';
+  }
+
+  function hideLogin() {
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('dashboard-content').style.visibility = '';
+  }
+
+  function initAuth() {
+    if (sessionStorage.getItem(AUTH_KEY) === '1') {
+      hideLogin();
+      return true;
+    }
+    showLogin();
+    const input = document.getElementById('admin-password');
+    const btn = document.getElementById('btn-login');
+    const err = document.getElementById('login-error');
+
+    const tryLogin = async () => {
+      const hash = await sha256(input.value);
+      if (hash === ADMIN_HASH) {
+        sessionStorage.setItem(AUTH_KEY, '1');
+        hideLogin();
+        setDefaultDates();
+        loadDashboard();
+      } else {
+        err.classList.remove('hidden');
+        input.value = '';
+        input.focus();
+      }
+    };
+
+    btn.addEventListener('click', tryLogin);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryLogin(); });
+    input.focus();
+    return false;
+  }
+
+  const isAuthed = initAuth();
+
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    sessionStorage.removeItem(AUTH_KEY);
+    location.reload();
+  });
+
   let chartReportsTime = null;
   let chartSystems = null;
   let chartStatus = null;
@@ -714,6 +770,8 @@
   }
 
   // Init
-  setDefaultDates();
-  loadDashboard();
+  if (isAuthed) {
+    setDefaultDates();
+    loadDashboard();
+  }
 })();

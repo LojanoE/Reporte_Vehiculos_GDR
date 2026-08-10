@@ -469,9 +469,11 @@ if (cod) {
   cod.classList.add('hidden');
 }
 
-// === Generador del código RDV: AÑOMES-CODVEH-RDV-0DÍA
-function generateCode(baseDate){
-  const d = baseDate || (fecha && fecha.value ? new Date(fecha.value) : new Date());
+// === Generador del código RDV: AÑOMES-CODVEH-RDV-0DÍA-VN (versión auto-incremental)
+let versionCache = { prefix: null, version: 0 };
+let lastGeneratedCode = null;
+
+function codePrefixFor(d) {
   const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
   let veh = 'GDR';
   if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
@@ -479,8 +481,69 @@ function generateCode(baseDate){
   } else if (cod && cod.value) {
     veh = cod.value.trim().toUpperCase();
   }
-  const version = d.getHours() >= 18 ? 'V1' : 'V0';
-  return `${y}${m}-${veh}-RDV-0${day}-${version}`;
+  return `${y}${m}-${veh}-RDV-0${day}-`;
+}
+
+function versionFromCode(code, prefix) {
+  if (!code || !code.startsWith(prefix)) return null;
+  const m = code.slice(prefix.length).match(/^V(\d+)$/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+async function fetchNextVersion(prefix) {
+  let max = -1;
+  // 1) Supabase (reportes ya guardados de ese vehículo/día)
+  if (window.SUPABASE_READY && navigator.onLine && window.supabaseClient) {
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('reports')
+        .select('cod_reporte')
+        .ilike('cod_reporte', `${prefix}V%`);
+      if (!error && Array.isArray(data)) {
+        data.forEach(r => {
+          const v = versionFromCode(r.cod_reporte, prefix);
+          if (v !== null) max = Math.max(max, v);
+        });
+      }
+    } catch (e) { /* sin conexión o error: continuar con otras fuentes */ }
+  }
+  // 2) Cola offline (IndexedDB)
+  if (typeof getPendingReports === 'function') {
+    try {
+      const pending = await getPendingReports();
+      pending.forEach(p => {
+        const v = versionFromCode(p.header && p.header.cod_reporte, prefix);
+        if (v !== null) max = Math.max(max, v);
+      });
+    } catch (e) {}
+  }
+  // 3) Contador local por prefijo (fallback offline)
+  try {
+    const lsVal = parseInt(localStorage.getItem('RDV_GDR_VER_' + prefix) || '-1', 10);
+    if (!isNaN(lsVal)) max = Math.max(max, lsVal);
+  } catch (e) {}
+  return max + 1;
+}
+
+async function refreshVersionFor(prefix) {
+  const next = await fetchNextVersion(prefix);
+  versionCache = { prefix, version: next };
+  return next;
+}
+
+function bumpVersion(prefix) {
+  if (versionCache.prefix === prefix) versionCache.version += 1;
+  else versionCache = { prefix, version: versionCache.version + 1 };
+  try { localStorage.setItem('RDV_GDR_VER_' + prefix, String(versionCache.version)); } catch (e) {}
+}
+
+async function generateCode(baseDate){
+  const d = baseDate || (fecha && fecha.value ? new Date(fecha.value) : new Date());
+  const prefix = codePrefixFor(d);
+  if (versionCache.prefix !== prefix) {
+    await refreshVersionFor(prefix);
+  }
+  return `${prefix}V${versionCache.version}`;
 }
 
 function checkMaintenance() {
@@ -534,13 +597,22 @@ function checkMaintenance() {
 }
 
 const updateLiveCode = () => {
-  const code = generateCode();
-  if (liveCodigo) liveCodigo.textContent = code;
   if (cod && placa) {
     const vehicleCode = cod.value.toUpperCase();
     placa.value = vehiclePlateMap[vehicleCode] || '';
   }
-  return code;
+  const d = fecha && fecha.value ? new Date(fecha.value) : new Date();
+  const prefix = codePrefixFor(d);
+  const show = (v) => { if (liveCodigo) liveCodigo.textContent = `${prefix}V${v}`; };
+  if (versionCache.prefix === prefix) {
+    show(versionCache.version);
+    return `${prefix}V${versionCache.version}`;
+  }
+  show('…');
+  refreshVersionFor(prefix).then(v => {
+    if (codePrefixFor(fecha && fecha.value ? new Date(fecha.value) : new Date()) === prefix) show(v);
+  });
+  return null;
 };
 
 // Events
@@ -733,10 +805,10 @@ function validar(){
   if (!foto1Data || !foto2Data) return t('valFoto');
   return null;
 }
-function fillReport(){
+async function fillReport(){
   const d = fecha && fecha.value ? new Date(fecha.value) : new Date();
-  const y = pad2(d.getFullYear() % 100), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
-  const code = generateCode(d);
+  const code = await generateCode(d);
+  lastGeneratedCode = code;
 
   const repCod = $('#rep-codigo'); if (repCod) repCod.textContent = code;
   $('#rep-fecha').textContent = formatDateTime(fecha.value);
@@ -752,7 +824,7 @@ function fillReport(){
   $('#rep-cod').textContent = displayCode;
   $('#rep-placa').textContent = (placa && placa.value || '').toUpperCase();
   $('#rep-km').textContent = Number(km && km.value || 0).toLocaleString();
-  $('#rep-arch').textContent = generateCode();
+  $('#rep-arch').textContent = code;
   const repObs = $('#rep-obs'); if (repObs) repObs.textContent = (obsGeneral && obsGeneral.value || tr('repObsEmpty'));
   $('#rep-conductor').textContent = conductor && conductor.value || tr('repConductorEmpty');
   $('#rep-inspector').textContent = inspector && inspector.value || tr('repInspectorEmpty');
@@ -775,8 +847,8 @@ function fillReport(){
 }
 
 function getReportPayload() {
-  const d = fecha && fecha.value ? new Date(fecha.value) : new Date();
-  const code = generateCode(d);
+  const code = lastGeneratedCode || liveCodigo?.textContent || '';
+  const version = code.includes('-') ? code.slice(code.lastIndexOf('-') + 1) : 'V0';
 
   let vehicleCode = '';
   if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
@@ -811,7 +883,7 @@ function getReportPayload() {
       ubicacion: ubicacion && ubicacion.value || '',
       obs_general: obsGeneral && obsGeneral.value || '',
       archivo: code,
-      version: d.getHours() >= 18 ? 'V1' : 'V0'
+      version: version
     },
     systems,
     photos: [
@@ -826,7 +898,7 @@ let informeGenerado = false;
 if (btnGenerar) btnGenerar.addEventListener('click', async ()=>{
   const err = validar();
   if (err) { alert(err); return; }
-  const code = fillReport();
+  const code = await fillReport();
   document.title = code;
   if (btnImprimir) {
     btnImprimir.disabled = false;
@@ -835,6 +907,10 @@ if (btnGenerar) btnGenerar.addEventListener('click', async ()=>{
   showToast(t('toastGenerado'));
   saveDraft();
   informeGenerado = true;
+
+  // Incrementar versión para el siguiente reporte del mismo vehículo/día
+  const dNow = fecha && fecha.value ? new Date(fecha.value) : new Date();
+  bumpVersion(codePrefixFor(dNow));
 
   // Guardar en Supabase o cola offline
   if (typeof saveReportOnlineOrQueue === 'function') {

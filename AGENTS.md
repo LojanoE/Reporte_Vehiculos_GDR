@@ -63,7 +63,8 @@
 - `styles.css` has aggressive print overrides to force white background/black text because the UI is dark mode.
 - Any CSS change that affects `#report`, `.rep-card`, `.rep-table`, or `.print-grid` must be verified with **Ctrl+P → Print to PDF**.
 - Report code format: `YYMM-<vehicle>-RDV-0<DAY>-V<version>`
-  - `<version>` is `V0` before 18:00, `V1` at 18:00 or later (determined by `fecha` field hour in `generateCode()`).
+  - `<version>` is **auto-incremental** (`V0`, `V1`, `V2`, ...). `generateCode()` checks Supabase, the offline IndexedDB queue and a `localStorage` counter (`RDV_GDR_VER_<prefix>`) to pick the next free version, so multiple reports per vehicle per day are supported.
+  - After each generation, `bumpVersion()` increments the counter.
 - **Important:** the printed report is **always in Spanish**. Do not use UI translation keys (`t()`) inside `fillReport()`; use report-only keys (`tr()`) or hardcoded Spanish.
 
 ## Database / Supabase
@@ -75,8 +76,9 @@
 
 ## Dashboard
 - URL: `dashboard.html`
+- **Access gate:** password-protected (client-side SHA-256 check, session flag in `sessionStorage` under `RDV_GDR_ADMIN`). The password is hardcoded as a hash in `dashboard.js`; this only deters casual access since the site is static. Editing/deleting data is NOT possible from the dashboard — use the Supabase Dashboard directly for corrections.
 - Charts: reports per day, top systems with failures, operational-status distribution, latest mileage per vehicle, critical-failures trend by system, vehicle operational-status comparison (stacked bars), maintenance projection with km trend.
-- Filters: date presets (last 7 days, last month default, this month, last calendar month, this year), date range, vehicle code, operational status.
+- Filters: date presets (last 7 days, last month default, this month, last calendar month, this year), date range, vehicle code, conductor, operational status.
 - Uses Chart.js via CDN.
 
 ## Vehicle Report

@@ -6,7 +6,7 @@
   <title>Dashboard — RDV GDR</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <link rel="stylesheet" href="styles.css?v=260810-01">
+  <link rel="stylesheet" href="styles.css?v=260810-02">
   <style>
     body { background: #0f172a; color: #e2e8f0; }
     .dash-card { background: rgba(30,41,59,.8); border: 1px solid rgba(255,255,255,.1); border-radius: .75rem; padding: 1rem; }
@@ -29,15 +29,29 @@
   </style>
 </head>
 <body>
-  <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+  <!-- ===== LOGIN OVERLAY ===== -->
+  <div id="login-overlay" class="hidden" style="position:fixed; inset:0; background:#0f172a; z-index:1000; display:flex; align-items:center; justify-content:center;">
+    <div class="dash-card" style="max-width:380px; width:90%; text-align:center;">
+      <div style="font-size:2.5rem; margin-bottom:.5rem;">🔒</div>
+      <h2 class="text-xl font-bold mb-2">Acceso restringido</h2>
+      <p class="text-slate-400 text-sm mb-4">Ingresa la contraseña de administrador para ver el dashboard.</p>
+      <input type="password" id="admin-password" placeholder="Contraseña" class="w-full bg-slate-900 border border-white/15 rounded-lg px-3 py-2 mb-3 text-center" autocomplete="current-password">
+      <div id="login-error" class="text-red-400 text-sm mb-3 hidden">Contraseña incorrecta</div>
+      <button id="btn-login" class="btn btn-primary w-full justify-center">Ingresar</button>
+      <a href="index.html" class="text-sm text-slate-400 hover:underline mt-3 inline-block">← Volver al formulario</a>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-6" id="dashboard-content">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold">Dashboard — Revisión Diaria de Vehículos</h1>
         <p class="text-slate-400 text-sm">KPIs, tendencias y análisis de reportes</p>
       </div>
-      <div class="flex gap-4">
+      <div class="flex gap-4 items-center">
         <a href="reporte-vehiculo.html" class="text-sm text-blue-400 hover:underline">📋 Reporte por vehículo</a>
         <a href="index.html" class="text-sm text-emerald-400 hover:underline">← Volver al formulario</a>
+        <button id="btn-logout" class="text-sm text-red-400 hover:underline">Cerrar sesión</button>
       </div>
     </div>
 
@@ -207,8 +221,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="constants.js?v=260810-01"></script>
-  <script src="supabase-client.js?v=260810-01"></script>
-  <script src="dashboard.js?v=260810-01"></script>
+  <script src="constants.js?v=260810-02"></script>
+  <script src="supabase-client.js?v=260810-02"></script>
+  <script src="dashboard.js?v=260810-02"></script>
 </body>
 </html>
