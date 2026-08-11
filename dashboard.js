@@ -71,11 +71,14 @@
   let chartMaintTrend = null;
 
   let allReportsCache = [];
+  let currentData = [];
+  let lastRefresh = null;
 
   const els = {
     start: document.getElementById('filter-start'),
     end: document.getElementById('filter-end'),
     vehicle: document.getElementById('filter-vehicle'),
+    codigo: document.getElementById('filter-codigo'),
     conductor: document.getElementById('filter-conductor'),
     status: document.getElementById('filter-status'),
     apply: document.getElementById('btn-apply'),
@@ -99,6 +102,22 @@
   };
 
   const MAINTENANCE_ALERTS = window.MAINTENANCE_ALERTS || {};
+
+  const ESTADO_BADGE = {
+    OPERATIVO: 'badge-ok',
+    'MANT. PREVENTIVO': 'badge-warn',
+    'MANT. CORRECTIVO': 'badge-danger',
+    INACTIVO: 'badge-warn'
+  };
+
+  const SYS_BADGES = { OK: 'badge-ok', OBS: 'badge-warn', CRI: 'badge-danger' };
+  const SYS_TEXTS = { OK: 'OK', OBS: 'Atención', CRI: 'Crítico' };
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
 
   function formatDate(iso) {
     if (!iso) return '—';
@@ -678,42 +697,104 @@
   // ========== Table ==========
 
   function renderTable(data) {
+    const shown = Math.min(data.length, 200);
+    const meta = document.getElementById('reports-meta');
+    if (meta) {
+      meta.textContent = lastRefresh
+        ? `Mostrando ${shown} de ${data.length} reportes · Actualizado ${formatDateTime(lastRefresh)}`
+        : `Mostrando ${shown} de ${data.length} reportes`;
+    }
+
     if (!data.length) {
-      els.tableBody.innerHTML = '<tr><td colspan="8" class="loading">No hay reportes</td></tr>';
+      els.tableBody.innerHTML = '<tr><td colspan="9" class="loading">No hay reportes</td></tr>';
       return;
     }
-    const rows = data.slice(0, 50).map(r => `
-      <tr>
-        <td>${r.cod_reporte || '—'}</td>
+    const rows = data.slice(0, 200).map(r => `
+      <tr class="report-row" data-cod="${escapeHtml(r.cod_reporte || '')}" style="cursor:pointer;" title="Ver detalle del reporte">
+        <td>${escapeHtml(r.cod_reporte || '—')}</td>
         <td>${formatDateTime(r.fecha_hora)}</td>
-        <td>${r.codigo_vehiculo || '—'}</td>
-        <td>${r.placa || '—'}</td>
+        <td>${escapeHtml(r.codigo_vehiculo || '—')}</td>
+        <td>${escapeHtml(r.placa || '—')}</td>
         <td>${r.kilometraje != null ? r.kilometraje.toLocaleString('es-EC') : '—'}</td>
-        <td>${r.estado_operativo || '—'}</td>
-        <td>${r.conductor || '—'}</td>
-        <td>${r.inspector || '—'}</td>
+        <td>${escapeHtml(r.estado_operativo || '—')}</td>
+        <td>${escapeHtml(r.conductor || '—')}</td>
+        <td>${escapeHtml(r.inspector || '—')}</td>
+        <td><button class="btn btn-ghost" style="padding:.25rem .5rem; font-size:.75rem;">Ver</button></td>
       </tr>
     `).join('');
     els.tableBody.innerHTML = rows;
   }
 
+  // ========== Modal detalle de reporte ==========
+
+  function hideReportModal() {
+    document.getElementById('report-modal').style.display = 'none';
+  }
+
+  function showReportModal(report) {
+    if (!report) return;
+    const set = (id, val) => { document.getElementById(id).textContent = val; };
+
+    set('modal-cod', report.cod_reporte || '—');
+    set('modal-fecha', formatDateTime(report.fecha_hora));
+    set('modal-vehiculo', report.codigo_vehiculo || '—');
+    set('modal-placa', report.placa || '—');
+    set('modal-km', report.kilometraje != null ? report.kilometraje.toLocaleString('es-EC') : '—');
+    set('modal-version', report.version || '—');
+    set('modal-conductor', report.conductor || '—');
+    set('modal-inspector', report.inspector || '—');
+    set('modal-ubicacion', report.ubicacion || '—');
+
+    const estado = report.estado_operativo || 'Desconocido';
+    document.getElementById('modal-estado').innerHTML =
+      `<span class="badge ${ESTADO_BADGE[estado] || 'badge-warn'}">${escapeHtml(estado)}</span>`;
+
+    const systems = Array.isArray(report.report_systems) ? report.report_systems : [];
+    const sysBody = document.getElementById('modal-systems');
+    if (!systems.length) {
+      sysBody.innerHTML = '<tr><td colspan="3" class="loading">Sin sistemas registrados</td></tr>';
+    } else {
+      sysBody.innerHTML = systems.map(s => `
+        <tr>
+          <td>${escapeHtml(s.nombre_es || '—')}</td>
+          <td><span class="badge ${SYS_BADGES[s.estado] || 'badge-ok'}">${escapeHtml(SYS_TEXTS[s.estado] || s.estado || '—')}</span></td>
+          <td>${escapeHtml(s.observacion) || '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    const obs = (report.obs_general || '').trim();
+    document.getElementById('modal-obs').textContent = obs || '—';
+
+    const photos = Array.isArray(report.report_photos) ? report.report_photos : [];
+    const photoMap = {};
+    photos.forEach(p => {
+      if (p.foto_index === 1 || p.foto_index === 2) photoMap[p.foto_index] = p.tiene_foto;
+    });
+    set('modal-foto1', photoMap[1] ? 'Con foto' : 'Sin foto');
+    set('modal-foto2', photoMap[2] ? 'Con foto' : 'Sin foto');
+
+    document.getElementById('report-modal').style.display = 'flex';
+  }
+
   // ========== Load / Filters ==========
 
   async function loadDashboard() {
-    els.tableBody.innerHTML = '<tr><td colspan="8" class="loading">Cargando...</td></tr>';
+    els.tableBody.innerHTML = '<tr><td colspan="9" class="loading">Cargando...</td></tr>';
     els.maintTableBody.innerHTML = '<tr><td colspan="7" class="loading">Cargando...</td></tr>';
 
     const filters = {
       startDate: els.start.value || undefined,
       endDate: els.end.value || undefined,
       vehicle: els.vehicle.value.trim() || undefined,
+      codigo: els.codigo.value.trim() || undefined,
       conductor: els.conductor.value.trim() || undefined,
       status: els.status.value || undefined,
       limit: 5000
     };
 
     if (typeof getReportsFromSupabase !== 'function') {
-      els.tableBody.innerHTML = '<tr><td colspan="8" class="loading">Error: cliente de Supabase no cargado</td></tr>';
+      els.tableBody.innerHTML = '<tr><td colspan="9" class="loading">Error: cliente de Supabase no cargado</td></tr>';
       return;
     }
 
@@ -725,12 +806,14 @@
 
     if (!filteredRes.ok || !allRes.ok) {
       const err = filteredRes.error || allRes.error;
-      els.tableBody.innerHTML = `<tr><td colspan="8" class="loading">Error cargando datos: ${err?.message || err}</td></tr>`;
+      els.tableBody.innerHTML = `<tr><td colspan="9" class="loading">Error cargando datos: ${err?.message || err}</td></tr>`;
       return;
     }
 
     const data = filteredRes.data || [];
     allReportsCache = allRes.data || [];
+    currentData = data;
+    lastRefresh = new Date();
 
     renderKPIs(data);
     renderReportsTime(data);
@@ -752,6 +835,7 @@
   if (els.reset) els.reset.addEventListener('click', () => {
     setPreset('last-month');
     els.vehicle.value = '';
+    els.codigo.value = '';
     els.conductor.value = '';
     els.status.value = '';
     loadDashboard();
@@ -768,6 +852,33 @@
       renderMaintenance(allReportsCache.length ? allReportsCache : []);
     });
   }
+
+  // Botón refrescar (recarga sin re-loguear)
+  const refreshBtn = document.getElementById('btn-refresh');
+  if (refreshBtn) refreshBtn.addEventListener('click', loadDashboard);
+
+  // Click en fila de reportes -> modal de detalle
+  if (els.tableBody) {
+    els.tableBody.addEventListener('click', (e) => {
+      const row = e.target.closest('tr.report-row');
+      if (!row) return;
+      const report = currentData.find(r => r.cod_reporte === row.dataset.cod);
+      showReportModal(report);
+    });
+  }
+
+  // Cierre del modal
+  const closeBtn = document.getElementById('modal-close');
+  if (closeBtn) closeBtn.addEventListener('click', hideReportModal);
+  const modal = document.getElementById('report-modal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideReportModal();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideReportModal();
+  });
 
   // Init
   if (isAuthed) {

@@ -102,9 +102,10 @@
    * @param {Object} filters
    * @param {string} filters.startDate - ISO date string (inclusive)
    * @param {string} filters.endDate   - ISO date string (inclusive)
- * @param {string} filters.vehicle   - código de vehículo
- * @param {string} filters.conductor - nombre del conductor
- * @param {string} filters.status    - estado operativo
+   * @param {string} filters.vehicle   - código de vehículo
+   * @param {string} filters.codigo    - código de reporte (fragmento)
+   * @param {string} filters.conductor - nombre del conductor
+   * @param {string} filters.status    - estado operativo
    * @param {number} filters.limit     - máximo de filas
    * @returns {Promise<{ok:boolean, data?:Array, error?:any}>}
    */
@@ -129,6 +130,9 @@
       }
       if (filters.vehicle) {
         query = query.ilike('codigo_vehiculo', `%${filters.vehicle}%`);
+      }
+      if (filters.codigo) {
+        query = query.ilike('cod_reporte', `%${filters.codigo}%`);
       }
       if (filters.conductor) {
         query = query.ilike('conductor', `%${filters.conductor}%`);

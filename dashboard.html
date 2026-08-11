@@ -75,6 +75,9 @@
         <label>Vehículo
           <input type="text" id="filter-vehicle" placeholder="ECO04">
         </label>
+        <label>Código
+          <input type="text" id="filter-codigo" placeholder="2608-ECO70-RDV-011">
+        </label>
         <label>Conductor
           <input type="text" id="filter-conductor" placeholder="Nombre del conductor">
         </label>
@@ -197,7 +200,13 @@
 
     <!-- Tabla -->
     <div class="dash-card">
-      <h3 class="font-semibold mb-3">Últimos reportes</h3>
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h3 class="font-semibold">Últimos reportes</h3>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-400" id="reports-meta">—</span>
+          <button id="btn-refresh" class="btn btn-ghost border-white/20" style="padding:.35rem .75rem; font-size:.8rem;">⟳ Refrescar</button>
+        </div>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -210,19 +219,66 @@
               <th>Estado</th>
               <th>Conductor</th>
               <th>Inspector</th>
+              <th>Ver</th>
             </tr>
           </thead>
           <tbody id="reports-table-body">
-            <tr><td colspan="8" class="loading">Cargando...</td></tr>
+            <tr><td colspan="9" class="loading">Cargando...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
+  <!-- ====== MODAL DETALLE DEL REPORTE ====== -->
+  <div id="report-modal" style="position:fixed; inset:0; background:rgba(2,6,23,.75); z-index:1100; display:none; align-items:center; justify-content:center; padding:1rem;" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="dash-card" style="width:100%; max-width:780px; max-height:90vh; overflow-y:auto; background:#1e293b; padding:1.25rem;">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <h3 class="text-lg font-bold" id="modal-title">Detalle del reporte</h3>
+          <p class="text-slate-400 text-xs" id="modal-cod">—</p>
+        </div>
+        <button id="modal-close" title="Cerrar" class="text-slate-400 hover:text-white text-2xl leading-none px-2" style="background:none; border:none; cursor:pointer;">×</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-4">
+        <div><span class="text-slate-400">Fecha y hora:</span> <span id="modal-fecha">—</span></div>
+        <div><span class="text-slate-400">Estado:</span> <span id="modal-estado">—</span></div>
+        <div><span class="text-slate-400">Vehículo:</span> <span id="modal-vehiculo">—</span></div>
+        <div><span class="text-slate-400">Placa:</span> <span id="modal-placa">—</span></div>
+        <div><span class="text-slate-400">Kilometraje:</span> <span id="modal-km">—</span></div>
+        <div><span class="text-slate-400">Versión:</span> <span id="modal-version">—</span></div>
+        <div><span class="text-slate-400">Conductor:</span> <span id="modal-conductor">—</span></div>
+        <div><span class="text-slate-400">Inspector:</span> <span id="modal-inspector">—</span></div>
+        <div class="sm:col-span-2"><span class="text-slate-400">Ubicación:</span> <span id="modal-ubicacion">—</span></div>
+      </div>
+
+      <h4 class="text-sm font-semibold text-slate-300 mb-2">Evaluación de sistemas</h4>
+      <div class="table-wrap mb-4">
+        <table>
+          <thead>
+            <tr><th>Sistema</th><th>Estado</th><th>Observación</th></tr>
+          </thead>
+          <tbody id="modal-systems">
+            <tr><td colspan="3" class="loading">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="text-sm font-semibold text-slate-300 mb-2">Observaciones generales</h4>
+      <div id="modal-obs" class="text-sm bg-slate-900 border border-white/10 rounded-lg p-3 mb-4 whitespace-pre-wrap">—</div>
+
+      <h4 class="text-sm font-semibold text-slate-300 mb-2">Fotos</h4>
+      <div class="flex flex-wrap gap-6 text-sm">
+        <div><span class="text-slate-400">Foto 1:</span> <span id="modal-foto1">—</span></div>
+        <div><span class="text-slate-400">Foto 2:</span> <span id="modal-foto2">—</span></div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="constants.js?v=260810-02"></script>
-  <script src="supabase-client.js?v=260810-02"></script>
-  <script src="dashboard.js?v=260810-02"></script>
+  <script src="supabase-client.js?v=260811-02"></script>
+  <script src="dashboard.js?v=260811-02"></script>
 </body>
 </html>
