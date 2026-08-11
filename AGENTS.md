@@ -79,6 +79,7 @@
 - **Access gate:** password-protected (client-side SHA-256 check, session flag in `sessionStorage` under `RDV_GDR_ADMIN`). The password is hardcoded as a hash in `dashboard.js`; this only deters casual access since the site is static. Editing/deleting data is NOT possible from the dashboard — use the Supabase Dashboard directly for corrections.
 - Charts: reports per day, top systems with failures, operational-status distribution, latest mileage per vehicle, critical-failures trend by system, vehicle operational-status comparison (stacked bars), maintenance projection with km trend.
 - Filters: date presets (last 7 days, last month default, this month, last calendar month, this year), date range, vehicle code, conductor, operational status.
+- Date handling: presets and the date-range filter use the browser's **local date** (`localISO()`) to avoid off-by-one day errors caused by UTC conversion. Preset ranges auto-correct on refresh if the end date falls behind today.
 - Uses Chart.js via CDN.
 
 ## Vehicle Report

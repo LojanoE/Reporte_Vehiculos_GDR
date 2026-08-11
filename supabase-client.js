@@ -124,13 +124,15 @@
       if (filters.limit) query = query.limit(filters.limit);
 
       if (filters.startDate) {
-        const start = new Date(filters.startDate);
-        start.setHours(0, 0, 0, 0);
+        // Construir la fecha con componentes locales para respetar la zona horaria
+        // del navegador y evitar interpretaciones UTC inesperadas.
+        const [y, m, d] = filters.startDate.split('-').map(Number);
+        const start = new Date(y, m - 1, d, 0, 0, 0, 0);
         query = query.gte('fecha_hora', start.toISOString());
       }
       if (filters.endDate) {
-        const end = new Date(filters.endDate);
-        end.setHours(23, 59, 59, 999);
+        const [y, m, d] = filters.endDate.split('-').map(Number);
+        const end = new Date(y, m - 1, d, 23, 59, 59, 999);
         query = query.lte('fecha_hora', end.toISOString());
       }
       if (filters.vehicle) {

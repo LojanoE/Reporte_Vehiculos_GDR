@@ -75,6 +75,8 @@
   let lastRefresh = null;
   let activePreset = 'last-month';
   let datesTouched = false;
+  let autoPreset = true; // true mientras el rango de fechas provenga de un preset
+  let programmaticUpdate = false; // evita marcar fechas como "tocadas" por eventos change espurios
 
   const els = {
     start: document.getElementById('filter-start'),
@@ -151,6 +153,13 @@
     return x;
   }
 
+  // Fecha local del navegador en formato YYYY-MM-DD. Evita que toISOString()
+  // use UTC y adelante/atrase un día según la zona horaria del usuario.
+  function localISO(d = new Date()) {
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().slice(0, 10);
+  }
+
   function daysBetween(a, b) {
     return Math.floor((startOfDay(b) - startOfDay(a)) / (1000 * 60 * 60 * 24));
   }
@@ -179,39 +188,46 @@
   // ========== Date presets ==========
 
   function setPreset(name) {
-    const today = new Date();
-    let start, end;
-    switch (name) {
-      case '7d':
-        start = addDays(today, -7);
-        end = today;
-        break;
-      case 'last-month':
-      default:
-        start = addDays(today, -30);
-        end = today;
-        break;
-      case 'this-month':
-        start = new Date(today.getFullYear(), today.getMonth(), 1);
-        end = today;
-        break;
-      case 'last-calendar-month': {
-        const m = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
-        const y = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-        start = new Date(y, m, 1);
-        end = new Date(y, m + 1, 0);
-        break;
+    programmaticUpdate = true;
+    try {
+      const today = new Date();
+      let start, end;
+      switch (name) {
+        case '7d':
+          start = addDays(today, -7);
+          end = today;
+          break;
+        case 'last-month':
+        default:
+          start = addDays(today, -30);
+          end = today;
+          break;
+        case 'this-month':
+          start = new Date(today.getFullYear(), today.getMonth(), 1);
+          end = today;
+          break;
+        case 'last-calendar-month': {
+          const m = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+          const y = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+          start = new Date(y, m, 1);
+          end = new Date(y, m + 1, 0);
+          break;
+        }
+        case 'year':
+          start = new Date(today.getFullYear(), 0, 1);
+          end = today;
+          break;
       }
-      case 'year':
-        start = new Date(today.getFullYear(), 0, 1);
-        end = today;
-        break;
-    }
-    els.start.value = start.toISOString().slice(0, 10);
-    els.end.value = end.toISOString().slice(0, 10);
+      els.start.value = localISO(start);
+      els.end.value = localISO(end);
 
-    activePreset = name;
-    datesTouched = false;
+      activePreset = name;
+      datesTouched = false;
+      autoPreset = true;
+    } finally {
+      // Liberar en el siguiente tick para que cualquier evento change espurio sea ignorado
+      setTimeout(() => { programmaticUpdate = false; }, 0);
+    }
 
     // Update active button
     document.querySelectorAll('#date-presets .preset-btn').forEach(btn => {
@@ -792,13 +808,12 @@
     els.maintTableBody.innerHTML = '<tr><td colspan="7" class="loading">Cargando...</td></tr>';
 
     // Auto-corrige ventanas de fecha estancadas (pestaña abierta varios días,
-    // sesión restaurada, etc.): si el usuario no tocó las fechas y el rango
-    // quedó en el pasado, se recalcula el preset activo relativo a hoy.
-    if (!datesTouched) {
-      const todayStr = new Date().toISOString().slice(0, 10);
-      if (!els.start.value || !els.end.value || els.end.value < todayStr) {
-        setPreset(activePreset);
-      }
+    // sesión restaurada, evento change espurio, etc.): si el rango proviene de
+    // un preset y su fecha fin ya quedó en el pasado, se recalcula relativo a hoy.
+    const todayStr = localISO();
+    if (autoPreset && (!els.start.value || !els.end.value || els.end.value < todayStr)) {
+      console.log('[dashboard] auto-corrigiendo rango de fecha a hoy:', todayStr);
+      setPreset(activePreset);
     }
 
     const filters = {
@@ -877,7 +892,11 @@
 
   // Si el usuario edita las fechas manualmente, se respeta su rango
   [els.start, els.end].forEach(input => {
-    if (input) input.addEventListener('change', () => { datesTouched = true; });
+    if (input) input.addEventListener('change', () => {
+      if (programmaticUpdate) return;
+      datesTouched = true;
+      autoPreset = false;
+    });
   });
 
   // Click en fila de reportes -> modal de detalle
