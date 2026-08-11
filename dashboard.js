@@ -73,6 +73,8 @@
   let allReportsCache = [];
   let currentData = [];
   let lastRefresh = null;
+  let activePreset = 'last-month';
+  let datesTouched = false;
 
   const els = {
     start: document.getElementById('filter-start'),
@@ -207,6 +209,9 @@
     }
     els.start.value = start.toISOString().slice(0, 10);
     els.end.value = end.toISOString().slice(0, 10);
+
+    activePreset = name;
+    datesTouched = false;
 
     // Update active button
     document.querySelectorAll('#date-presets .preset-btn').forEach(btn => {
@@ -700,9 +705,12 @@
     const shown = Math.min(data.length, 200);
     const meta = document.getElementById('reports-meta');
     if (meta) {
+      const win = els.start.value && els.end.value
+        ? `Del ${formatDate(els.start.value)} al ${formatDate(els.end.value)} · `
+        : '';
       meta.textContent = lastRefresh
-        ? `Mostrando ${shown} de ${data.length} reportes · Actualizado ${formatDateTime(lastRefresh)}`
-        : `Mostrando ${shown} de ${data.length} reportes`;
+        ? `${win}Mostrando ${shown} de ${data.length} · Actualizado ${formatDateTime(lastRefresh)}`
+        : `${win}Mostrando ${shown} de ${data.length}`;
     }
 
     if (!data.length) {
@@ -783,6 +791,16 @@
     els.tableBody.innerHTML = '<tr><td colspan="9" class="loading">Cargando...</td></tr>';
     els.maintTableBody.innerHTML = '<tr><td colspan="7" class="loading">Cargando...</td></tr>';
 
+    // Auto-corrige ventanas de fecha estancadas (pestaña abierta varios días,
+    // sesión restaurada, etc.): si el usuario no tocó las fechas y el rango
+    // quedó en el pasado, se recalcula el preset activo relativo a hoy.
+    if (!datesTouched) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      if (!els.start.value || !els.end.value || els.end.value < todayStr) {
+        setPreset(activePreset);
+      }
+    }
+
     const filters = {
       startDate: els.start.value || undefined,
       endDate: els.end.value || undefined,
@@ -856,6 +874,11 @@
   // Botón refrescar (recarga sin re-loguear)
   const refreshBtn = document.getElementById('btn-refresh');
   if (refreshBtn) refreshBtn.addEventListener('click', loadDashboard);
+
+  // Si el usuario edita las fechas manualmente, se respeta su rango
+  [els.start, els.end].forEach(input => {
+    if (input) input.addEventListener('change', () => { datesTouched = true; });
+  });
 
   // Click en fila de reportes -> modal de detalle
   if (els.tableBody) {

@@ -15,7 +15,12 @@
     return;
   }
 
-  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // fetch sin caché: evita que el navegador sirva respuestas viejas del API
+  const noStoreFetch = (url, opts) => fetch(url, Object.assign({}, opts, { cache: 'no-store' }));
+
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { fetch: noStoreFetch }
+  });
   window.SUPABASE_READY = true;
   window.supabaseClient = client;
 
