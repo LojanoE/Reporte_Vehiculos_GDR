@@ -10,7 +10,7 @@
     'ECO23': { motor: 93408, caja: 93408 },
     'ECO62': { motor: 31652, caja: 41652 },
     'ECO26': { motor: 134833, caja: 144044 },
-    'ECO70': { motor: 24681, caja: 24681 },
+    'ECO70': { motor: 25000, caja: 25000 },
     'ECO71': { motor: 15000, caja: 20000 },
     'ECO36': { motor: 219886, caja: 219886 },
     'M01':   { motor: 172841, caja: 182562 },
