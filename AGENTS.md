@@ -92,5 +92,11 @@
 - **Excel export:** SheetJS (`xlsx`) via cdnjs CDN; 4 sheets (Resumen, Detalle, Conductores, Fallas por sistema).
 - Linked from `dashboard.html` header.
 
+## Executive Summary
+- URL: `resumen-ejecutivo.html` — printable one-page executive summary of the platform for GDR management (mirrors the structure of `NEXUS_Resumen_Ejecutivo.pdf`).
+- Loads live KPIs from Supabase via `getStatsFromSupabase()` (total reports, distinct vehicles, % OPERATIVO, OBS/CRI counts, days in operation); shows "—" with a note when offline.
+- No password gate — the document is meant to be shared/printed for management.
+- **Print:** `window.print()` with A4 print CSS (white background). Linked from `dashboard.html` header.
+
 ## Existing Docs
 - `GEMINI.md` contains a longer project description. Treat it as background, not source of truth; executable behavior lives in `app.js`, `dashboard.js`, `supabase-client.js`, `offline-queue.js`, and `styles.css`.
