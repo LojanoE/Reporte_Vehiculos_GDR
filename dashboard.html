@@ -49,6 +49,7 @@
         <p class="text-slate-400 text-sm">KPIs, tendencias y análisis de reportes</p>
       </div>
       <div class="flex gap-4 items-center">
+        <a href="analisis-quincenal.html" class="text-sm text-violet-400 hover:underline">📅 Análisis quincenal</a>
         <a href="reporte-vehiculo.html" class="text-sm text-blue-400 hover:underline">📋 Reporte por vehículo</a>
         <a href="resumen-ejecutivo.html" class="text-sm text-amber-400 hover:underline">📄 Resumen ejecutivo</a>
         <a href="index.html" class="text-sm text-emerald-400 hover:underline">← Volver al formulario</a>
@@ -152,38 +153,6 @@
           <canvas id="chart-vehicle-status"></canvas>
         </div>
       </div>
-    </div>
-
-    <!-- Análisis por grupo de trabajo -->
-    <div class="dash-card">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-        <h3 class="font-semibold">Análisis por grupo de trabajo (quincenas G1 / G2)</h3>
-        <label class="text-sm text-slate-400">Métrica
-          <select id="grp-metric" class="ml-2 bg-slate-900 border border-white/15 rounded-lg px-2 py-1 text-sm">
-            <option value="reportes">Reportes</option>
-            <option value="cri">Fallas críticas</option>
-            <option value="obs">Fallas en atención</option>
-            <option value="pctOp">% Operativo</option>
-            <option value="km">Km recorridos</option>
-            <option value="kmDia" selected>Km diario promedio</option>
-          </select>
-        </label>
-      </div>
-      <div id="grp-current" class="text-sm text-slate-300 mb-3">—</div>
-      <div class="table-wrap mb-4">
-        <table>
-          <thead>
-            <tr><th>Métrica</th><th>G1</th><th>G2</th></tr>
-          </thead>
-          <tbody id="grp-compare-body">
-            <tr><td colspan="3" class="loading">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="chart-container">
-        <canvas id="chart-groups"></canvas>
-      </div>
-      <div id="grp-note" class="text-xs text-slate-400 mt-2"></div>
     </div>
 
     <!-- Tendencia de fallas críticas -->
@@ -318,8 +287,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="constants.js?v=260909-01"></script>
+  <script src="constants.js?v=260909-02"></script>
   <script src="supabase-client.js?v=260909-01"></script>
-  <script src="dashboard.js?v=260909-01"></script>
+  <script src="dashboard.js?v=260909-02"></script>
 </body>
 </html>

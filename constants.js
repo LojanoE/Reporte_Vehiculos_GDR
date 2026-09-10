@@ -42,28 +42,42 @@
   };
 
   // ====== Grupos de trabajo por quincena ======
-  // G1 arranca el 11/09/2026 y cada bloque de 15 días alterna G1/G2 todo el año.
-  window.WORK_GROUP_ANCHOR = '2026-09-11'; // inicio de G1 (fecha local)
-  window.WORK_GROUP_PERIOD_DAYS = 15;
+  // Esquema mensual: G1 = días 11–25 de cada mes; G2 = día 26 al 10 del mes
+  // siguiente. La primera quincena arranca el 11/08/2026 (G1 de agosto).
+  window.WORK_GROUP_ANCHOR = '2026-08-11'; // inicio de la primera G1 (fecha local)
 
   /**
    * Devuelve la quincena (grupo de trabajo) a la que pertenece una fecha.
    * @param {Date} date
    * @returns {null | {index:number, group:'G1'|'G2', start:Date, end:Date}}
-   *          null si la fecha es anterior al arranque de G1.
+   *          null si la fecha es anterior al arranque (11/08/2026).
    */
   window.getWorkGroupPeriod = function (date) {
-    const [y, m, d] = window.WORK_GROUP_ANCHOR.split('-').map(Number);
-    const anchor = new Date(y, m - 1, d);
-    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const diffDays = Math.floor((day - anchor) / 86400000);
-    if (diffDays < 0) return null;
-    const index = Math.floor(diffDays / window.WORK_GROUP_PERIOD_DAYS);
-    const start = new Date(anchor);
-    start.setDate(start.getDate() + index * window.WORK_GROUP_PERIOD_DAYS);
-    const end = new Date(start);
-    end.setDate(end.getDate() + window.WORK_GROUP_PERIOD_DAYS - 1);
-    return { index, group: index % 2 === 0 ? 'G1' : 'G2', start, end };
+    const [ay, am] = window.WORK_GROUP_ANCHOR.split('-').map(Number);
+    const y = date.getFullYear();
+    const m = date.getMonth(); // 0-based
+    const day = date.getDate();
+    let group, start, end, periodMonth;
+    if (day >= 11 && day <= 25) {
+      group = 'G1';
+      start = new Date(y, m, 11);
+      end = new Date(y, m, 25);
+      periodMonth = y * 12 + m;
+    } else if (day >= 26) {
+      group = 'G2';
+      start = new Date(y, m, 26);
+      end = new Date(y, m + 1, 10);
+      periodMonth = y * 12 + m;
+    } else { // días 1–10: cola de la G2 del mes anterior
+      group = 'G2';
+      start = new Date(y, m - 1, 26);
+      end = new Date(y, m, 10);
+      periodMonth = y * 12 + (m - 1);
+    }
+    const anchorMonth = ay * 12 + (am - 1);
+    const index = (periodMonth - anchorMonth) * 2 + (group === 'G1' ? 0 : 1);
+    if (index < 0) return null;
+    return { index, group, start, end };
   };
 
   // ====== Coherencia de kilometraje ======

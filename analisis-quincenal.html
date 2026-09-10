@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análisis Quincenal — RDV GDR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <link rel="stylesheet" href="styles.css?v=260811-04">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; }
+    .dash-card { background: rgba(30,41,59,.8); border: 1px solid rgba(255,255,255,.1); border-radius: .75rem; padding: 1rem; }
+    .dash-kpi { font-size: 2rem; font-weight: 700; }
+    .chart-container { position: relative; height: 280px; }
+    .loading { color: #94a3b8; text-align: center; padding: 2rem; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th, td { padding: .5rem; border-bottom: 1px solid rgba(255,255,255,.1); text-align: left; }
+    th { color: #94a3b8; font-weight: 600; }
+    .badge { display: inline-block; padding: .15rem .4rem; border-radius: .375rem; font-size: .75rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold">Análisis quincenal por grupo de trabajo</h1>
+        <p class="text-slate-400 text-sm">Quincenas G1 (11–25) y G2 (26–10) · Cobertura desde el 11/08/2026</p>
+      </div>
+      <div class="flex gap-4 items-center">
+        <a href="dashboard.html" class="text-sm text-emerald-400 hover:underline">← Volver al dashboard</a>
+        <a href="reporte-vehiculo.html" class="text-sm text-blue-400 hover:underline">📋 Reporte por vehículo</a>
+        <a href="index.html" class="text-sm text-slate-400 hover:underline">Formulario</a>
+      </div>
+    </div>
+
+    <!-- Quincena actual -->
+    <div class="dash-card">
+      <h3 class="font-semibold mb-2">Quincena actual</h3>
+      <div id="grp-current" class="text-sm text-slate-300">Cargando...</div>
+    </div>
+
+    <!-- Comparativo G1 vs G2 -->
+    <div class="dash-card">
+      <h3 class="font-semibold mb-2">Comparativo acumulado G1 vs G2</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Métrica</th><th>G1</th><th>G2</th></tr>
+          </thead>
+          <tbody id="grp-compare-body">
+            <tr><td colspan="3" class="loading">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="grp-note" class="text-xs text-slate-400 mt-2"></div>
+    </div>
+
+    <!-- Evolución por quincena -->
+    <div class="dash-card">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+        <h3 class="font-semibold">Evolución por quincena</h3>
+        <label class="text-sm text-slate-400">Métrica
+          <select id="grp-metric" class="ml-2 bg-slate-900 border border-white/15 rounded-lg px-2 py-1 text-sm">
+            <option value="reportes">Reportes</option>
+            <option value="cri">Fallas críticas</option>
+            <option value="obs">Fallas en atención</option>
+            <option value="pctOp">% Operativo</option>
+            <option value="km">Km recorridos</option>
+            <option value="kmDia" selected>Km diario promedio</option>
+          </select>
+        </label>
+      </div>
+      <div class="chart-container">
+        <canvas id="chart-groups"></canvas>
+      </div>
+    </div>
+
+    <!-- Detalle por quincena -->
+    <div class="dash-card">
+      <h3 class="font-semibold mb-2">Detalle por quincena</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Grupo</th>
+              <th>Periodo</th>
+              <th>Reportes</th>
+              <th>% Operativo</th>
+              <th>OBS</th>
+              <th>CRI</th>
+              <th>Km recorridos</th>
+              <th>Km diario prom.</th>
+            </tr>
+          </thead>
+          <tbody id="grp-detail-body">
+            <tr><td colspan="8" class="loading">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="constants.js?v=260909-02"></script>
+  <script src="supabase-client.js?v=260909-01"></script>
+  <script src="analisis-quincenal.js?v=260909-02"></script>
+</body>
+</html>
