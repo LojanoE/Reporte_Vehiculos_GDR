@@ -18,6 +18,8 @@
     th, td { padding: .5rem; border-bottom: 1px solid rgba(255,255,255,.1); text-align: left; }
     th { color: #94a3b8; font-weight: 600; }
     .badge { display: inline-block; padding: .15rem .4rem; border-radius: .375rem; font-size: .75rem; font-weight: 600; }
+    .filter-row label { display: flex; flex-direction: column; font-size: .875rem; color: #94a3b8; }
+    .filter-row select { background: rgba(15,23,42,.8); border: 1px solid rgba(255,255,255,.15); border-radius: .5rem; padding: .4rem .6rem; color: #e2e8f0; margin-top: .25rem; }
   </style>
 </head>
 <body>
@@ -32,6 +34,20 @@
         <a href="dashboard.html" class="text-sm text-emerald-400 hover:underline">← Volver al dashboard</a>
         <a href="reporte-vehiculo.html" class="text-sm text-blue-400 hover:underline">📋 Reporte por vehículo</a>
         <a href="index.html" class="text-sm text-slate-400 hover:underline">Formulario</a>
+      </div>
+    </div>
+
+    <!-- Filtros de quincenas -->
+    <div class="dash-card">
+      <div class="flex flex-wrap gap-4 items-end filter-row">
+        <h3 class="font-semibold w-full">Quincenas a analizar</h3>
+        <label>Desde
+          <select id="q-desde"></select>
+        </label>
+        <label>Hasta
+          <select id="q-hasta"></select>
+        </label>
+        <button id="q-todas" class="btn btn-ghost border-white/20" style="padding:.4rem .9rem; font-size:.85rem;">Todas</button>
       </div>
     </div>
 
@@ -131,6 +147,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="constants.js?v=260909-02"></script>
   <script src="supabase-client.js?v=260909-02"></script>
-  <script src="analisis-quincenal.js?v=260909-05"></script>
+  <script src="analisis-quincenal.js?v=260909-06"></script>
 </body>
 </html>

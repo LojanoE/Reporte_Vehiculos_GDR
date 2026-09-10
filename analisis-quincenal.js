@@ -10,14 +10,18 @@
 
   let chartGroups = null;
   let groupPeriodStats = [];
+  let selStats = [];                       // quincenas dentro del rango filtrado
+  let selIdxSet = new Set();               // índices de quincena seleccionados
+  let allPeriods = [];                     // todas las quincenas desde el ancla
   let allDataQ = [];                       // reportes desde el ancla
   let aggGroups = null;                    // agregados G1/G2 para exportar
   let vehicleRows = [];                    // filas calculadas por vehículo
   let grandRow = null;                     // fila TOTAL por vehículo
   let currentPeriodInfo = '';              // texto de la quincena actual
+  let discardedTotalG = 0;                 // lecturas de km descartadas (tipeos)
   const perVehicleKm = new Map();          // vehículo -> Map(periodIndex -> km válido)
   const periodGroupByIndex = new Map();    // periodIndex -> 'G1'|'G2'
-  const daysByGroup = { G1: 0, G2: 0 };    // días transcurridos por grupo
+  const daysByGroup = { G1: 0, G2: 0 };    // días transcurridos por grupo (rango filtrado)
 
   function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, c => ({
@@ -59,9 +63,6 @@
 
   async function load() {
     const currentEl = document.getElementById('grp-current');
-    const tbody = document.getElementById('grp-compare-body');
-    const detailBody = document.getElementById('grp-detail-body');
-    const noteEl = document.getElementById('grp-note');
 
     if (typeof window.getWorkGroupPeriod !== 'function' || typeof getReportsFromSupabase !== 'function') {
       currentEl.textContent = 'Error: cliente de datos no cargado.';
@@ -97,17 +98,17 @@
     }
 
     // ===== Lista de quincenas desde el ancla hasta hoy =====
-    const periods = [];
+    allPeriods = [];
     {
       let y = anchor.getFullYear();
       let m = anchor.getMonth();
       while (true) {
         const g1 = window.getWorkGroupPeriod(new Date(y, m, 11));
         if (g1.start > today) break;
-        periods.push(g1);
+        allPeriods.push(g1);
         const g2 = window.getWorkGroupPeriod(new Date(y, m, 26));
         if (g2.start > today) break;
-        periods.push(g2);
+        allPeriods.push(g2);
         m++;
         if (m > 11) { m = 0; y++; }
       }
@@ -121,11 +122,11 @@
       byVehicle.get(r.codigo_vehiculo).push(r);
     });
     const kmByPeriod = new Map();
-    let discardedTotal = 0;
+    discardedTotalG = 0;
     perVehicleKm.clear();
     byVehicle.forEach((list, veh) => {
       const { valid, discarded } = window.filterKmReadings(list);
-      discardedTotal += discarded;
+      discardedTotalG += discarded;
       for (let i = 1; i < valid.length; i++) {
         const p = window.getWorkGroupPeriod(new Date(valid[i].fecha_hora));
         if (!p) continue;
@@ -137,8 +138,8 @@
       }
     });
 
-    // ===== Stats por quincena =====
-    groupPeriodStats = periods.map(p => {
+    // ===== Stats por quincena (todas; el filtro se aplica en applyFilters) =====
+    groupPeriodStats = allPeriods.map(p => {
       const inPeriod = data.filter(r => {
         const d = new Date(r.fecha_hora);
         return d >= p.start && d <= endOfDay(p.end);
@@ -165,10 +166,61 @@
       };
     });
 
-    // ===== Agregados por grupo =====
+    // ===== Datos base para las vistas filtradas =====
+    allDataQ = data;
+    periodGroupByIndex.clear();
+    groupPeriodStats.forEach(s => periodGroupByIndex.set(s.index, s.group));
+
+    populateQuincenaFilters();
+    applyFilters();
+  }
+
+  // ===== Filtros de quincenas =====
+  function quincenaLabel(p) {
+    return `${p.group} · ${p.start.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit' })} al ${p.end.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit' })}`;
+  }
+
+  function populateQuincenaFilters() {
+    const desde = document.getElementById('q-desde');
+    const hasta = document.getElementById('q-hasta');
+    if (!desde || !hasta) return;
+    const opts = allPeriods.map(p => `<option value="${p.index}">${quincenaLabel(p)}</option>`).join('');
+    desde.innerHTML = opts;
+    hasta.innerHTML = opts;
+    if (allPeriods.length) {
+      desde.value = String(allPeriods[0].index);
+      hasta.value = String(allPeriods[allPeriods.length - 1].index);
+    }
+  }
+
+  function applyFilters() {
+    const desde = document.getElementById('q-desde');
+    const hasta = document.getElementById('q-hasta');
+    let from = desde && desde.value !== '' ? +desde.value : null;
+    let to = hasta && hasta.value !== '' ? +hasta.value : null;
+    if (from != null && to != null && from > to) [from, to] = [to, from];
+
+    selStats = groupPeriodStats.filter(s => (from == null || s.index >= from) && (to == null || s.index <= to));
+    selIdxSet = new Set(selStats.map(s => s.index));
+    daysByGroup.G1 = 0;
+    daysByGroup.G2 = 0;
+    selStats.forEach(s => { daysByGroup[s.group] += s.daysElapsed; });
+
+    renderCompare();
+    renderVehicleTable();
+    renderDetail();
+    renderChart();
+  }
+
+  // ===== Comparativo G1 vs G2 (rango filtrado) =====
+  function renderCompare() {
+    const tbody = document.getElementById('grp-compare-body');
+    const noteEl = document.getElementById('grp-note');
+    if (!tbody) return;
+
     const blank = () => ({ reportes: 0, obs: 0, cri: 0, op: 0, km: 0, days: 0, quincenas: 0 });
     const agg = { G1: blank(), G2: blank() };
-    groupPeriodStats.forEach(s => {
+    selStats.forEach(s => {
       const a = agg[s.group];
       a.reportes += s.reportes;
       a.obs += s.obs;
@@ -185,7 +237,7 @@
       `<tr><td>${label}</td><td style="color:${GROUP_COLORS.G1}; font-weight:600;">${v1}</td>` +
       `<td style="color:${GROUP_COLORS.G2}; font-weight:600;">${v2}</td></tr>`;
     tbody.innerHTML = [
-      row('Quincenas transcurridas', agg.G1.quincenas, agg.G2.quincenas),
+      row('Quincenas analizadas', agg.G1.quincenas, agg.G2.quincenas),
       row('Reportes', agg.G1.reportes, agg.G2.reportes),
       row('% Operativo',
         agg.G1.reportes ? Math.round((agg.G1.op / agg.G1.reportes) * 100) + '%' : '—',
@@ -198,9 +250,25 @@
         agg.G2.days ? (agg.G2.km / agg.G2.days).toFixed(1) : '—')
     ].join('');
 
-    // ===== Detalle por quincena =====
-    detailBody.innerHTML = groupPeriodStats.length
-      ? groupPeriodStats.map(s => `
+    if (noteEl) {
+      const rangeTxt = selStats.length
+        ? `${selStats.length} quincena(s) en el análisis: ${quincenaLabel(selStats[0])} — ${quincenaLabel(selStats[selStats.length - 1])}`
+        : 'Sin quincenas en el rango seleccionado';
+      const parts = [rangeTxt];
+      if (discardedTotalG > 0) {
+        parts.push(`⚠️ ${discardedTotalG} lectura(s) de km descartada(s) por inconsistencia (posibles tipeos), excluidas del análisis`);
+      }
+      noteEl.textContent = parts.join(' · ');
+    }
+  }
+
+  // ===== Detalle por quincena (rango filtrado) =====
+  function renderDetail() {
+    const detailBody = document.getElementById('grp-detail-body');
+    if (!detailBody) return;
+    const fmtKm = v => Math.round(v).toLocaleString('es-EC');
+    detailBody.innerHTML = selStats.length
+      ? selStats.map(s => `
         <tr>
           <td><span class="badge" style="background:${s.group === 'G1' ? 'rgba(52,211,153,.2)' : 'rgba(96,165,250,.2)'}; color:${GROUP_COLORS[s.group]};">${s.group}</span></td>
           <td>${formatDate(s.start)} al ${formatDate(s.end)}</td>
@@ -212,43 +280,31 @@
           <td>${s.kmDia.toFixed(1)}</td>
         </tr>
       `).join('')
-      : '<tr><td colspan="8" class="loading">Sin quincenas transcurridas</td></tr>';
-
-    // ===== Nota =====
-    if (noteEl) {
-      const parts = [`${periods.length} quincena(s) transcurridas desde el ${formatDate(anchor)}`];
-      if (discardedTotal > 0) {
-        parts.push(`⚠️ ${discardedTotal} lectura(s) de km descartada(s) por inconsistencia (posibles tipeos), excluidas del análisis`);
-      }
-      noteEl.textContent = parts.join(' · ');
-    }
-
-    // ===== Datos para la tabla por vehículo =====
-    allDataQ = data;
-    periodGroupByIndex.clear();
-    daysByGroup.G1 = 0;
-    daysByGroup.G2 = 0;
-    groupPeriodStats.forEach(s => {
-      periodGroupByIndex.set(s.index, s.group);
-      daysByGroup[s.group] += s.daysElapsed;
-    });
-    renderVehicleTable();
-
-    renderChart();
+      : '<tr><td colspan="8" class="loading">Sin quincenas en el rango seleccionado</td></tr>';
   }
+
 
   // ===== Tabla por vehículo: G1 / G2 / Total =====
   function renderVehicleTable() {
     const body = document.getElementById('veh-table-body');
     if (!body) return;
 
-    const vehicles = [...new Set(allDataQ.map(r => r.codigo_vehiculo).filter(Boolean))].sort();
+    const vehicles = [...new Set(allDataQ.map(r => r.codigo_vehiculo).filter(Boolean))].sort()
+      .filter(v => allDataQ.some(r => {
+        if (r.codigo_vehiculo !== v) return false;
+        const p = window.getWorkGroupPeriod(new Date(r.fecha_hora));
+        return p && selIdxSet.has(p.index);
+      }));
     const grand = { G1: { rep: 0, km: 0 }, G2: { rep: 0, km: 0 }, rep: 0, op: 0, obs: 0, cri: 0, km: 0 };
     const totalDays = daysByGroup.G1 + daysByGroup.G2;
     vehicleRows = [];
 
     vehicles.forEach(v => {
-      const rs = allDataQ.filter(r => r.codigo_vehiculo === v);
+      const rs = allDataQ.filter(r => {
+        if (r.codigo_vehiculo !== v) return false;
+        const p = window.getWorkGroupPeriod(new Date(r.fecha_hora));
+        return p && selIdxSet.has(p.index);
+      });
       let obs = 0, cri = 0;
       rs.forEach(r => (Array.isArray(r.report_systems) ? r.report_systems : []).forEach(s => {
         if (s.estado === 'OBS') obs++;
@@ -264,7 +320,10 @@
       });
       const km = { G1: 0, G2: 0 };
       const m = perVehicleKm.get(v);
-      if (m) m.forEach((k, idx) => { const g = periodGroupByIndex.get(idx); if (g) km[g] += k; });
+      if (m) m.forEach((k, idx) => {
+        const g = periodGroupByIndex.get(idx);
+        if (g && selIdxSet.has(idx)) km[g] += k;
+      });
 
       grand.G1.rep += rep.G1; grand.G1.km += km.G1;
       grand.G2.rep += rep.G2; grand.G2.km += km.G2;
@@ -350,6 +409,9 @@
     const comparativo = [
       ['ANÁLISIS QUINCENAL POR GRUPO DE TRABAJO — RDV GDR'],
       [currentPeriodInfo],
+      [selStats.length
+        ? `Rango analizado: ${quincenaLabel(selStats[0])} — ${quincenaLabel(selStats[selStats.length - 1])}`
+        : 'Sin quincenas en el rango seleccionado'],
       ['Generado', hoy.toLocaleString('es-EC')],
       ['Esquema', 'G1 = días 11–25 de cada mes · G2 = día 26 al 10 del mes siguiente'],
       [],
@@ -387,9 +449,9 @@
       ]);
     }
 
-    // Hoja 3: Detalle por quincena
+    // Hoja 3: Detalle por quincena (rango filtrado)
     const detalle = [['Grupo', 'Periodo inicio', 'Periodo fin', 'Reportes', '% Operativo', 'OBS', 'CRI', 'Km recorridos', 'Km diario prom.']];
-    groupPeriodStats.forEach(s => detalle.push([
+    selStats.forEach(s => detalle.push([
       s.group,
       formatDate(s.start),
       formatDate(s.end),
@@ -441,11 +503,11 @@
     };
     const m = METRICS[metric] || METRICS.kmDia;
 
-    const labels = groupPeriodStats.map(s =>
+    const labels = selStats.map(s =>
       `${s.group} · ${s.start.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit' })}`
     );
-    const values = groupPeriodStats.map(s => m.get(s));
-    const colors = groupPeriodStats.map(s => GROUP_COLORS[s.group]);
+    const values = selStats.map(s => m.get(s));
+    const colors = selStats.map(s => GROUP_COLORS[s.group]);
 
     chartGroups = destroyChart(chartGroups);
     chartGroups = new Chart(canvas.getContext('2d'), {
@@ -462,7 +524,7 @@
           tooltip: {
             callbacks: {
               title: items => {
-                const s = groupPeriodStats[items[0].dataIndex];
+                const s = selStats[items[0].dataIndex];
                 return `${s.group} · ${formatDate(s.start)} al ${formatDate(s.end)}`;
               }
             }
@@ -486,6 +548,18 @@
 
   const btnExcel = document.getElementById('btn-excel');
   if (btnExcel) btnExcel.addEventListener('click', exportExcel);
+
+  ['q-desde', 'q-hasta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', applyFilters);
+  });
+  const btnTodas = document.getElementById('q-todas');
+  if (btnTodas) btnTodas.addEventListener('click', () => {
+    if (!allPeriods.length) return;
+    document.getElementById('q-desde').value = String(allPeriods[0].index);
+    document.getElementById('q-hasta').value = String(allPeriods[allPeriods.length - 1].index);
+    applyFilters();
+  });
 
   load();
 })();
