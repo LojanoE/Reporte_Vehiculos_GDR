@@ -225,64 +225,83 @@
       periodGroupByIndex.set(s.index, s.group);
       daysByGroup[s.group] += s.daysElapsed;
     });
-    renderVehicleTable((document.getElementById('veh-group') || {}).value || '');
+    renderVehicleTable();
 
     renderChart();
   }
 
-  // ===== Tabla por vehículo (con totales) =====
-  function renderVehicleTable(groupVal) {
+  // ===== Tabla por vehículo: G1 / G2 / Total =====
+  function renderVehicleTable() {
     const body = document.getElementById('veh-table-body');
     if (!body) return;
-    const groups = groupVal ? [groupVal] : ['G1', 'G2'];
-    const days = groups.reduce((a, g) => a + daysByGroup[g], 0);
-
-    const inSel = r => {
-      const p = window.getWorkGroupPeriod(new Date(r.fecha_hora));
-      return p && groups.includes(p.group);
-    };
 
     const vehicles = [...new Set(allDataQ.map(r => r.codigo_vehiculo).filter(Boolean))].sort();
-    const tot = { reportes: 0, op: 0, obs: 0, cri: 0, km: 0 };
+    const grand = { G1: { rep: 0, km: 0 }, G2: { rep: 0, km: 0 }, rep: 0, op: 0, obs: 0, cri: 0, km: 0 };
 
     const rows = vehicles.map(v => {
-      const rs = allDataQ.filter(r => r.codigo_vehiculo === v && inSel(r));
+      const rs = allDataQ.filter(r => r.codigo_vehiculo === v);
       let obs = 0, cri = 0;
       rs.forEach(r => (Array.isArray(r.report_systems) ? r.report_systems : []).forEach(s => {
         if (s.estado === 'OBS') obs++;
         if (s.estado === 'CRI') cri++;
       }));
       const op = rs.filter(r => r.estado_operativo === 'OPERATIVO').length;
-      let km = 0;
-      const m = perVehicleKm.get(v);
-      if (m) m.forEach((k, idx) => { if (groups.includes(periodGroupByIndex.get(idx))) km += k; });
 
-      tot.reportes += rs.length; tot.op += op; tot.obs += obs; tot.cri += cri; tot.km += km;
+      // Reportes y km por grupo
+      const rep = { G1: 0, G2: 0 };
+      rs.forEach(r => {
+        const p = window.getWorkGroupPeriod(new Date(r.fecha_hora));
+        if (p) rep[p.group]++;
+      });
+      const km = { G1: 0, G2: 0 };
+      const m = perVehicleKm.get(v);
+      if (m) m.forEach((k, idx) => { const g = periodGroupByIndex.get(idx); if (g) km[g] += k; });
+
+      grand.G1.rep += rep.G1; grand.G1.km += km.G1;
+      grand.G2.rep += rep.G2; grand.G2.km += km.G2;
+      grand.rep += rs.length; grand.op += op; grand.obs += obs; grand.cri += cri;
+      grand.km += km.G1 + km.G2;
+
+      const cell = (val, color) =>
+        `<td${color ? ` style="color:${color};"` : ''}>${val}</td>`;
+      const kmFmt = k => Math.round(k).toLocaleString('es-EC');
+      const kmDia = (k, g) => daysByGroup[g] ? (k / daysByGroup[g]).toFixed(1) : '—';
+      const totalDays = daysByGroup.G1 + daysByGroup.G2;
+      const kmTot = km.G1 + km.G2;
 
       return `<tr>
         <td><strong>${escapeHtml(v)}</strong></td>
+        ${cell(rep.G1, GROUP_COLORS.G1)}${cell(kmFmt(km.G1), GROUP_COLORS.G1)}${cell(kmDia(km.G1, 'G1'), GROUP_COLORS.G1)}
+        ${cell(rep.G2, GROUP_COLORS.G2)}${cell(kmFmt(km.G2), GROUP_COLORS.G2)}${cell(kmDia(km.G2, 'G2'), GROUP_COLORS.G2)}
         <td>${rs.length}</td>
         <td>${rs.length ? Math.round((op / rs.length) * 100) + '%' : '—'}</td>
         <td>${obs}</td>
         <td>${cri}</td>
-        <td>${Math.round(km).toLocaleString('es-EC')}</td>
-        <td>${days ? (km / days).toFixed(1) : '—'}</td>
+        <td>${kmFmt(kmTot)}</td>
+        <td>${totalDays ? (kmTot / totalDays).toFixed(1) : '—'}</td>
       </tr>`;
     });
 
     if (!vehicles.length) {
-      body.innerHTML = '<tr><td colspan="7" class="loading">Sin datos de vehículos</td></tr>';
+      body.innerHTML = '<tr><td colspan="13" class="loading">Sin datos de vehículos</td></tr>';
       return;
     }
 
+    const totalDays = daysByGroup.G1 + daysByGroup.G2;
     rows.push(`<tr style="border-top:2px solid rgba(255,255,255,.25); font-weight:700;">
-      <td>TOTAL ${groupVal || 'G1+G2'}</td>
-      <td>${tot.reportes}</td>
-      <td>${tot.reportes ? Math.round((tot.op / tot.reportes) * 100) + '%' : '—'}</td>
-      <td>${tot.obs}</td>
-      <td>${tot.cri}</td>
-      <td>${Math.round(tot.km).toLocaleString('es-EC')}</td>
-      <td>${days ? (tot.km / days).toFixed(1) : '—'}</td>
+      <td>TOTAL</td>
+      <td style="color:${GROUP_COLORS.G1};">${grand.G1.rep}</td>
+      <td style="color:${GROUP_COLORS.G1};">${Math.round(grand.G1.km).toLocaleString('es-EC')}</td>
+      <td style="color:${GROUP_COLORS.G1};">${daysByGroup.G1 ? (grand.G1.km / daysByGroup.G1).toFixed(1) : '—'}</td>
+      <td style="color:${GROUP_COLORS.G2};">${grand.G2.rep}</td>
+      <td style="color:${GROUP_COLORS.G2};">${Math.round(grand.G2.km).toLocaleString('es-EC')}</td>
+      <td style="color:${GROUP_COLORS.G2};">${daysByGroup.G2 ? (grand.G2.km / daysByGroup.G2).toFixed(1) : '—'}</td>
+      <td>${grand.rep}</td>
+      <td>${grand.rep ? Math.round((grand.op / grand.rep) * 100) + '%' : '—'}</td>
+      <td>${grand.obs}</td>
+      <td>${grand.cri}</td>
+      <td>${Math.round(grand.km).toLocaleString('es-EC')}</td>
+      <td>${totalDays ? (grand.km / totalDays).toFixed(1) : '—'}</td>
     </tr>`);
 
     body.innerHTML = rows.join('');
@@ -345,9 +364,6 @@
 
   const grpMetric = document.getElementById('grp-metric');
   if (grpMetric) grpMetric.addEventListener('change', renderChart);
-
-  const vehGroup = document.getElementById('veh-group');
-  if (vehGroup) vehGroup.addEventListener('change', () => renderVehicleTable(vehGroup.value));
 
   load();
 })();
