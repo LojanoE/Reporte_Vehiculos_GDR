@@ -81,6 +81,8 @@ const I18N = {
     valCodigo: 'Código del vehículo es obligatorio.',
     valPlaca: 'La placa es obligatoria.',
     valKm: 'Kilometraje inválido.',
+    valKmRetrocede: (last, f) => `⛔ El kilometraje es MENOR al último registrado (${last.toLocaleString()} km el ${f}). Corrige el tipeo antes de generar.`,
+    valKmSalto: (diff, last) => `⚠️ Salto de ${diff.toLocaleString()} km respecto al último registro (${last.toLocaleString()} km). Verifica que no sea un tipeo.`,
     valFecha: 'Fecha/hora obligatoria.',
     valFoto: 'Las dos fotos son obligatorias.',
 
@@ -202,6 +204,8 @@ const I18N = {
     valCodigo: '车辆编号为必填项。',
     valPlaca: '车牌为必填项。',
     valKm: '里程无效。',
+    valKmRetrocede: (last, f) => `⛔ 里程低于上次记录（${f} 为 ${last.toLocaleString()} 公里）。请更正后再生成。`,
+    valKmSalto: (diff, last) => `⚠️ 与上次记录（${last.toLocaleString()} 公里）相差 ${diff.toLocaleString()} 公里，请确认是否输入有误。`,
     valFecha: '日期/时间为必填项。',
     valFoto: '两张照片均为必填项。',
 
@@ -596,6 +600,65 @@ function checkMaintenance() {
   }
 }
 
+// === Coherencia de kilometraje (detección de tipeos contra el último registro) ===
+let kmCoherenceBlocked = false;
+let kmCoherenceMsg = '';
+const lastKmCache = {}; // vehicleCode -> { kilometraje, fecha_hora } | null
+
+function currentVehicleCode() {
+  if (codSelect && codSelect.value && codSelect.value !== 'OTRO') return codSelect.value;
+  if (cod && cod.value) return cod.value.trim().toUpperCase();
+  return '';
+}
+
+async function fetchLastKm(vehicleCode) {
+  if (Object.prototype.hasOwnProperty.call(lastKmCache, vehicleCode)) return lastKmCache[vehicleCode];
+  let result = null;
+  if (window.SUPABASE_READY && navigator.onLine && typeof getLastKmFromSupabase === 'function') {
+    try {
+      const res = await getLastKmFromSupabase(vehicleCode);
+      if (res.ok && res.data) result = res.data;
+    } catch (e) { /* sin conexión: se omite la verificación */ }
+  }
+  lastKmCache[vehicleCode] = result;
+  return result;
+}
+
+async function checkKmCoherence() {
+  kmCoherenceBlocked = false;
+  kmCoherenceMsg = '';
+  if (!kmWarning || !km) return;
+  const code = currentVehicleCode();
+  const currentKm = parseInt(km.value, 10);
+  if (!code || isNaN(currentKm)) return;
+
+  const last = await fetchLastKm(code);
+  if (!last || last.kilometraje == null) return;
+
+  // El usuario pudo cambiar vehículo/km mientras se consultaba
+  if (currentVehicleCode() !== code || parseInt(km.value, 10) !== currentKm) return;
+
+  const diff = currentKm - last.kilometraje;
+  const f = new Date(last.fecha_hora).toLocaleDateString();
+  if (diff < 0) {
+    kmCoherenceBlocked = true;
+    kmCoherenceMsg = t('valKmRetrocede', last.kilometraje, f);
+  } else if (diff > (window.KM_MAX_JUMP || 1500)) {
+    kmCoherenceMsg = t('valKmSalto', diff, last.kilometraje);
+  }
+
+  if (kmCoherenceMsg) {
+    if (!kmWarning.textContent.includes(kmCoherenceMsg)) {
+      kmWarning.textContent = kmWarning.textContent
+        ? kmWarning.textContent + ' | ' + kmCoherenceMsg
+        : kmCoherenceMsg;
+    }
+    kmWarning.classList.remove('hidden');
+    kmWarning.style.color = kmCoherenceBlocked ? '#f87171' : '';
+    showToast(kmCoherenceMsg);
+  }
+}
+
 const updateLiveCode = () => {
   if (cod && placa) {
     const vehicleCode = cod.value.toUpperCase();
@@ -616,7 +679,7 @@ const updateLiveCode = () => {
 };
 
 // Events
-if (cod) cod.addEventListener('input', e => { cod.value = cod.value.toUpperCase(); updateLiveCode(); checkMaintenance(); saveDraft(); });
+if (cod) cod.addEventListener('input', e => { cod.value = cod.value.toUpperCase(); updateLiveCode(); checkMaintenance(); checkKmCoherence(); saveDraft(); });
 if (codSelect) codSelect.addEventListener('change', e => {
   if (codSelect.value === 'OTRO') {
     cod.disabled = false;
@@ -628,11 +691,12 @@ if (codSelect) codSelect.addEventListener('change', e => {
     cod.classList.add('hidden');
     updateLiveCode();
     checkMaintenance();
+    checkKmCoherence();
     saveDraft();
   }
 });
 if (fecha) fecha.addEventListener('change', ()=> { updateLiveCode(); saveDraft(); });
-[placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el && el.addEventListener('input', () => { if(el === km) checkMaintenance(); saveDraft(); }));
+[placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el && el.addEventListener('input', () => { if(el === km) { checkMaintenance(); checkKmCoherence(); } saveDraft(); }));
 
 // Image previews + resize
 const readAndPreview = (file, imgEl, cb) => {
@@ -898,6 +962,8 @@ let informeGenerado = false;
 if (btnGenerar) btnGenerar.addEventListener('click', async ()=>{
   const err = validar();
   if (err) { alert(err); return; }
+  await checkKmCoherence();
+  if (kmCoherenceBlocked) { alert(kmCoherenceMsg || t('valKm')); return; }
   const code = await fillReport();
   document.title = code;
   if (btnImprimir) {

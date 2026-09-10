@@ -116,7 +116,13 @@
 
   function computeMetrics(data) {
     const now = new Date();
-    const kms = data.map(r => r.kilometraje).filter(k => k != null);
+    // Km recorridos solo con lecturas válidas (tipeos descartados)
+    let kms;
+    if (typeof window.filterKmReadings === 'function') {
+      kms = window.filterKmReadings(data).valid.map(r => r.kilometraje);
+    } else {
+      kms = data.map(r => r.kilometraje).filter(k => k != null);
+    }
     const kmRange = kms.length > 1 ? (Math.max(...kms) - Math.min(...kms)) : 0;
 
     const operativos = data.filter(r => r.estado_operativo === 'OPERATIVO').length;

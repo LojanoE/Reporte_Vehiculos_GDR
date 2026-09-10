@@ -14,7 +14,7 @@
 ## Architecture
 - **Entry / Form:** `index.html` (form UI + printable report layout + chatbot markup + language toggle)
 - **Logic:** `app.js` — validation, `localStorage` drafts, Canvas image resize, report generation, chatbot, i18n engine, Supabase save
-- **Constants:** `constants.js` — shared `MAINTENANCE_ALERTS`, `ALERT_RANGE` and status color map used by `app.js` and `dashboard.js`
+- **Constants:** `constants.js` — shared `MAINTENANCE_ALERTS`, `ALERT_RANGE` and status color map used by `app.js` and `dashboard.js`. Also hosts the work-group logic (`WORK_GROUP_ANCHOR` = 2026-09-11 G1 start, 15-day alternating G1/G2 periods via `getWorkGroupPeriod()`) and the mileage-typo filter (`filterKmReadings()`, local-median based, thresholds `KM_MAX_JUMP` / `KM_MAX_DAILY_RATE`).
 - **Supabase client:** `supabase-client.js` — initialize Supabase JS SDK and expose `saveReportToSupabase()`, `getReportsFromSupabase()`, `getStatsFromSupabase()`
 - **Offline queue:** `offline-queue.js` — IndexedDB queue (`RDV_GDR_DB`) + automatic sync when the browser comes back online
 - **Dashboard:** `dashboard.html` + `dashboard.js` — KPIs, charts (Chart.js), filters by date/vehicle/status
@@ -78,7 +78,9 @@
 - URL: `dashboard.html`
 - **Access gate:** password-protected (client-side SHA-256 check, session flag in `sessionStorage` under `RDV_GDR_ADMIN`). The password is hardcoded as a hash in `dashboard.js`; this only deters casual access since the site is static. Editing/deleting data is NOT possible from the dashboard — use the Supabase Dashboard directly for corrections.
 - Charts: reports per day, top systems with failures, operational-status distribution, latest mileage per vehicle, critical-failures trend by system, vehicle operational-status comparison (stacked bars), maintenance projection with km trend.
-- Filters: date presets (last 7 days, last month default, this month, last calendar month, this year), date range, vehicle code, conductor, operational status.
+- Filters: date presets (last 7 days, last month default, this month, last calendar month, this year), date range, vehicle code, conductor, operational status, **work group (G1/G2 — applied client-side from the report date)**.
+- **Work-group analysis section:** quincena card (current group, dates, days left), G1 vs G2 comparison table (reports, % OPERATIVO, OBS/CRI, km traveled, **average daily km**) and a per-quincena bar chart with selectable metric. Groups derive from `getWorkGroupPeriod()` in `constants.js`; nothing is stored in the DB.
+- **Km coherence:** all km-based metrics (km chart, maintenance projection, group analysis, `reporte-vehiculo.js` km traveled) discard typo readings via `filterKmReadings()`; discarded counts are surfaced as notes. The form (`app.js`) blocks km lower than the vehicle's last Supabase reading and warns on jumps over `KM_MAX_JUMP` (i18n keys `valKmRetrocede` / `valKmSalto`, fetched via `getLastKmFromSupabase()`).
 - Date handling: presets and the date-range filter use the browser's **local date** (`localISO()`) to avoid off-by-one day errors caused by UTC conversion. Preset ranges auto-correct on refresh if the end date falls behind today.
 - Uses Chart.js via CDN.
 

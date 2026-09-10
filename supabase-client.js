@@ -174,7 +174,31 @@
     }
   }
 
+  /**
+   * Obtiene la última lectura de kilometraje registrada de un vehículo.
+   * Se usa en el formulario para detectar tipeos (km que retrocede o salta demasiado).
+   * @param {string} vehicleCode
+   * @returns {Promise<{ok:boolean, data?:{kilometraje:number, fecha_hora:string}|null, error?:any}>}
+   */
+  async function getLastKm(vehicleCode) {
+    try {
+      const { data, error } = await client
+        .from('reports')
+        .select('kilometraje, fecha_hora')
+        .eq('codigo_vehiculo', vehicleCode)
+        .not('kilometraje', 'is', null)
+        .order('fecha_hora', { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return { ok: true, data: (data && data[0]) || null };
+    } catch (err) {
+      console.error('Error leyendo último kilometraje:', err);
+      return { ok: false, data: null, error: err };
+    }
+  }
+
   window.saveReportToSupabase = saveReport;
   window.getReportsFromSupabase = getReports;
   window.getStatsFromSupabase = getStats;
+  window.getLastKmFromSupabase = getLastKm;
 })();
