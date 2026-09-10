@@ -10,6 +10,10 @@
 
   let chartGroups = null;
   let groupPeriodStats = [];
+  let allDataQ = [];                       // reportes desde el ancla
+  const perVehicleKm = new Map();          // vehículo -> Map(periodIndex -> km válido)
+  const periodGroupByIndex = new Map();    // periodIndex -> 'G1'|'G2'
+  const daysByGroup = { G1: 0, G2: 0 };    // días transcurridos por grupo
 
   function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, c => ({
@@ -60,13 +64,16 @@
       return;
     }
 
-    const res = await getReportsFromSupabase({ limit: 5000 });
+    const anchor = anchorDate();
+    const res = await getReportsFromSupabase({
+      startDate: window.WORK_GROUP_ANCHOR || '2026-08-11',
+      limit: 5000
+    });
     if (!res.ok) {
       currentEl.textContent = `Error cargando datos: ${res.error?.message || res.error}`;
       return;
     }
 
-    const anchor = anchorDate();
     const today = startOfDay(new Date());
     const data = (res.data || []).filter(r => new Date(r.fecha_hora) >= anchor);
 
@@ -109,13 +116,18 @@
     });
     const kmByPeriod = new Map();
     let discardedTotal = 0;
-    byVehicle.forEach(list => {
+    perVehicleKm.clear();
+    byVehicle.forEach((list, veh) => {
       const { valid, discarded } = window.filterKmReadings(list);
       discardedTotal += discarded;
       for (let i = 1; i < valid.length; i++) {
         const p = window.getWorkGroupPeriod(new Date(valid[i].fecha_hora));
         if (!p) continue;
-        kmByPeriod.set(p.index, (kmByPeriod.get(p.index) || 0) + (valid[i].kilometraje - valid[i - 1].kilometraje));
+        const delta = Math.max(0, valid[i].kilometraje - valid[i - 1].kilometraje);
+        kmByPeriod.set(p.index, (kmByPeriod.get(p.index) || 0) + delta);
+        if (!perVehicleKm.has(veh)) perVehicleKm.set(veh, new Map());
+        const m = perVehicleKm.get(veh);
+        m.set(p.index, (m.get(p.index) || 0) + delta);
       }
     });
 
@@ -204,7 +216,76 @@
       noteEl.textContent = parts.join(' · ');
     }
 
+    // ===== Datos para la tabla por vehículo =====
+    allDataQ = data;
+    periodGroupByIndex.clear();
+    daysByGroup.G1 = 0;
+    daysByGroup.G2 = 0;
+    groupPeriodStats.forEach(s => {
+      periodGroupByIndex.set(s.index, s.group);
+      daysByGroup[s.group] += s.daysElapsed;
+    });
+    renderVehicleTable((document.getElementById('veh-group') || {}).value || '');
+
     renderChart();
+  }
+
+  // ===== Tabla por vehículo (con totales) =====
+  function renderVehicleTable(groupVal) {
+    const body = document.getElementById('veh-table-body');
+    if (!body) return;
+    const groups = groupVal ? [groupVal] : ['G1', 'G2'];
+    const days = groups.reduce((a, g) => a + daysByGroup[g], 0);
+
+    const inSel = r => {
+      const p = window.getWorkGroupPeriod(new Date(r.fecha_hora));
+      return p && groups.includes(p.group);
+    };
+
+    const vehicles = [...new Set(allDataQ.map(r => r.codigo_vehiculo).filter(Boolean))].sort();
+    const tot = { reportes: 0, op: 0, obs: 0, cri: 0, km: 0 };
+
+    const rows = vehicles.map(v => {
+      const rs = allDataQ.filter(r => r.codigo_vehiculo === v && inSel(r));
+      let obs = 0, cri = 0;
+      rs.forEach(r => (Array.isArray(r.report_systems) ? r.report_systems : []).forEach(s => {
+        if (s.estado === 'OBS') obs++;
+        if (s.estado === 'CRI') cri++;
+      }));
+      const op = rs.filter(r => r.estado_operativo === 'OPERATIVO').length;
+      let km = 0;
+      const m = perVehicleKm.get(v);
+      if (m) m.forEach((k, idx) => { if (groups.includes(periodGroupByIndex.get(idx))) km += k; });
+
+      tot.reportes += rs.length; tot.op += op; tot.obs += obs; tot.cri += cri; tot.km += km;
+
+      return `<tr>
+        <td><strong>${escapeHtml(v)}</strong></td>
+        <td>${rs.length}</td>
+        <td>${rs.length ? Math.round((op / rs.length) * 100) + '%' : '—'}</td>
+        <td>${obs}</td>
+        <td>${cri}</td>
+        <td>${Math.round(km).toLocaleString('es-EC')}</td>
+        <td>${days ? (km / days).toFixed(1) : '—'}</td>
+      </tr>`;
+    });
+
+    if (!vehicles.length) {
+      body.innerHTML = '<tr><td colspan="7" class="loading">Sin datos de vehículos</td></tr>';
+      return;
+    }
+
+    rows.push(`<tr style="border-top:2px solid rgba(255,255,255,.25); font-weight:700;">
+      <td>TOTAL ${groupVal || 'G1+G2'}</td>
+      <td>${tot.reportes}</td>
+      <td>${tot.reportes ? Math.round((tot.op / tot.reportes) * 100) + '%' : '—'}</td>
+      <td>${tot.obs}</td>
+      <td>${tot.cri}</td>
+      <td>${Math.round(tot.km).toLocaleString('es-EC')}</td>
+      <td>${days ? (tot.km / days).toFixed(1) : '—'}</td>
+    </tr>`);
+
+    body.innerHTML = rows.join('');
   }
 
   function renderChart() {
@@ -264,6 +345,9 @@
 
   const grpMetric = document.getElementById('grp-metric');
   if (grpMetric) grpMetric.addEventListener('change', renderChart);
+
+  const vehGroup = document.getElementById('veh-group');
+  if (vehGroup) vehGroup.addEventListener('change', () => renderVehicleTable(vehGroup.value));
 
   load();
 })();

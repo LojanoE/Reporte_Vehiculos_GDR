@@ -148,7 +148,24 @@
         query = query.eq('estado_operativo', filters.status);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await (async () => {
+        // Paginación: PostgREST devuelve máx. 1000 filas por petición
+        const PAGE = 1000;
+        let all = [];
+        let from = 0;
+        while (true) {
+          const { data: chunk, error: chunkErr } = await query.range(from, from + PAGE - 1);
+          if (chunkErr) throw chunkErr;
+          all = all.concat(chunk || []);
+          if (!chunk || chunk.length < PAGE) break;
+          from += PAGE;
+          if (filters.limit && all.length >= filters.limit) {
+            all = all.slice(0, filters.limit);
+            break;
+          }
+        }
+        return { data: all, error: null };
+      })();
       if (error) throw error;
       return { ok: true, data: data || [] };
     } catch (err) {
