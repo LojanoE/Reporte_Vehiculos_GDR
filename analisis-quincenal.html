@@ -28,6 +28,7 @@
         <p class="text-slate-400 text-sm">Quincenas G1 (11–25) y G2 (26–10) · Cobertura desde el 11/08/2026</p>
       </div>
       <div class="flex gap-4 items-center">
+        <button id="btn-excel" class="btn btn-primary" style="font-size:.85rem; padding:.4rem .9rem;">📊 Exportar Excel</button>
         <a href="dashboard.html" class="text-sm text-emerald-400 hover:underline">← Volver al dashboard</a>
         <a href="reporte-vehiculo.html" class="text-sm text-blue-400 hover:underline">📋 Reporte por vehículo</a>
         <a href="index.html" class="text-sm text-slate-400 hover:underline">Formulario</a>
@@ -127,8 +128,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="constants.js?v=260909-02"></script>
   <script src="supabase-client.js?v=260909-02"></script>
-  <script src="analisis-quincenal.js?v=260909-04"></script>
+  <script src="analisis-quincenal.js?v=260909-05"></script>
 </body>
 </html>

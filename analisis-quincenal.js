@@ -11,6 +11,10 @@
   let chartGroups = null;
   let groupPeriodStats = [];
   let allDataQ = [];                       // reportes desde el ancla
+  let aggGroups = null;                    // agregados G1/G2 para exportar
+  let vehicleRows = [];                    // filas calculadas por vehículo
+  let grandRow = null;                     // fila TOTAL por vehículo
+  let currentPeriodInfo = '';              // texto de la quincena actual
   const perVehicleKm = new Map();          // vehículo -> Map(periodIndex -> km válido)
   const periodGroupByIndex = new Map();    // periodIndex -> 'G1'|'G2'
   const daysByGroup = { G1: 0, G2: 0 };    // días transcurridos por grupo
@@ -81,13 +85,15 @@
     const cur = window.getWorkGroupPeriod(today);
     if (cur) {
       const remaining = daysBetween(today, cur.end) + 1;
+      currentPeriodInfo = `Quincena actual: ${cur.group} · Del ${formatDate(cur.start)} al ${formatDate(cur.end)} · Quedan ${remaining} día(s)`;
       currentEl.innerHTML =
         `<span class="badge" style="background:${cur.group === 'G1' ? 'rgba(52,211,153,.2)' : 'rgba(96,165,250,.2)'};` +
         ` color:${GROUP_COLORS[cur.group]}; font-size:1rem;">${cur.group}</span> ` +
         `· Del <strong>${formatDate(cur.start)}</strong> al <strong>${formatDate(cur.end)}</strong> ` +
         `· Quedan <strong>${remaining}</strong> día(s)`;
     } else {
-      currentEl.textContent = `Las quincenas de trabajo inician el ${formatDate(anchor)}.`;
+      currentPeriodInfo = `Las quincenas de trabajo inician el ${formatDate(anchor)}.`;
+      currentEl.textContent = currentPeriodInfo;
     }
 
     // ===== Lista de quincenas desde el ancla hasta hoy =====
@@ -172,6 +178,7 @@
       a.days += s.daysElapsed;
       a.quincenas++;
     });
+    aggGroups = agg;
 
     const fmtKm = v => Math.round(v).toLocaleString('es-EC');
     const row = (label, v1, v2) =>
@@ -237,8 +244,10 @@
 
     const vehicles = [...new Set(allDataQ.map(r => r.codigo_vehiculo).filter(Boolean))].sort();
     const grand = { G1: { rep: 0, km: 0 }, G2: { rep: 0, km: 0 }, rep: 0, op: 0, obs: 0, cri: 0, km: 0 };
+    const totalDays = daysByGroup.G1 + daysByGroup.G2;
+    vehicleRows = [];
 
-    const rows = vehicles.map(v => {
+    vehicles.forEach(v => {
       const rs = allDataQ.filter(r => r.codigo_vehiculo === v);
       let obs = 0, cri = 0;
       rs.forEach(r => (Array.isArray(r.report_systems) ? r.report_systems : []).forEach(s => {
@@ -262,49 +271,159 @@
       grand.rep += rs.length; grand.op += op; grand.obs += obs; grand.cri += cri;
       grand.km += km.G1 + km.G2;
 
-      const cell = (val, color) =>
-        `<td${color ? ` style="color:${color};"` : ''}>${val}</td>`;
-      const kmFmt = k => Math.round(k).toLocaleString('es-EC');
-      const kmDia = (k, g) => daysByGroup[g] ? (k / daysByGroup[g]).toFixed(1) : '—';
-      const totalDays = daysByGroup.G1 + daysByGroup.G2;
       const kmTot = km.G1 + km.G2;
-
-      return `<tr>
-        <td><strong>${escapeHtml(v)}</strong></td>
-        ${cell(rep.G1, GROUP_COLORS.G1)}${cell(kmFmt(km.G1), GROUP_COLORS.G1)}${cell(kmDia(km.G1, 'G1'), GROUP_COLORS.G1)}
-        ${cell(rep.G2, GROUP_COLORS.G2)}${cell(kmFmt(km.G2), GROUP_COLORS.G2)}${cell(kmDia(km.G2, 'G2'), GROUP_COLORS.G2)}
-        <td>${rs.length}</td>
-        <td>${rs.length ? Math.round((op / rs.length) * 100) + '%' : '—'}</td>
-        <td>${obs}</td>
-        <td>${cri}</td>
-        <td>${kmFmt(kmTot)}</td>
-        <td>${totalDays ? (kmTot / totalDays).toFixed(1) : '—'}</td>
-      </tr>`;
+      vehicleRows.push({
+        veh: v,
+        repG1: rep.G1, kmG1: Math.round(km.G1), kmDiaG1: daysByGroup.G1 ? +(km.G1 / daysByGroup.G1).toFixed(1) : null,
+        repG2: rep.G2, kmG2: Math.round(km.G2), kmDiaG2: daysByGroup.G2 ? +(km.G2 / daysByGroup.G2).toFixed(1) : null,
+        rep: rs.length,
+        pctOp: rs.length ? Math.round((op / rs.length) * 100) : null,
+        obs, cri,
+        kmTot: Math.round(kmTot),
+        kmDiaTot: totalDays ? +(kmTot / totalDays).toFixed(1) : null
+      });
     });
 
-    if (!vehicles.length) {
+    grandRow = {
+      repG1: grand.G1.rep, kmG1: Math.round(grand.G1.km),
+      kmDiaG1: daysByGroup.G1 ? +(grand.G1.km / daysByGroup.G1).toFixed(1) : null,
+      repG2: grand.G2.rep, kmG2: Math.round(grand.G2.km),
+      kmDiaG2: daysByGroup.G2 ? +(grand.G2.km / daysByGroup.G2).toFixed(1) : null,
+      rep: grand.rep,
+      pctOp: grand.rep ? Math.round((grand.op / grand.rep) * 100) : null,
+      obs: grand.obs, cri: grand.cri,
+      kmTot: Math.round(grand.km),
+      kmDiaTot: totalDays ? +(grand.km / totalDays).toFixed(1) : null
+    };
+
+    if (!vehicleRows.length) {
       body.innerHTML = '<tr><td colspan="13" class="loading">Sin datos de vehículos</td></tr>';
       return;
     }
 
-    const totalDays = daysByGroup.G1 + daysByGroup.G2;
+    const fmt = n => n == null ? '—' : n.toLocaleString('es-EC');
+    const rowHtml = r => `<tr>
+      <td><strong>${escapeHtml(r.veh)}</strong></td>
+      <td style="color:${GROUP_COLORS.G1};">${r.repG1}</td>
+      <td style="color:${GROUP_COLORS.G1};">${fmt(r.kmG1)}</td>
+      <td style="color:${GROUP_COLORS.G1};">${r.kmDiaG1 ?? '—'}</td>
+      <td style="color:${GROUP_COLORS.G2};">${r.repG2}</td>
+      <td style="color:${GROUP_COLORS.G2};">${fmt(r.kmG2)}</td>
+      <td style="color:${GROUP_COLORS.G2};">${r.kmDiaG2 ?? '—'}</td>
+      <td>${r.rep}</td>
+      <td>${r.pctOp != null ? r.pctOp + '%' : '—'}</td>
+      <td>${r.obs}</td>
+      <td>${r.cri}</td>
+      <td>${fmt(r.kmTot)}</td>
+      <td>${r.kmDiaTot ?? '—'}</td>
+    </tr>`;
+
+    const rows = vehicleRows.map(rowHtml);
+    const t = grandRow;
     rows.push(`<tr style="border-top:2px solid rgba(255,255,255,.25); font-weight:700;">
       <td>TOTAL</td>
-      <td style="color:${GROUP_COLORS.G1};">${grand.G1.rep}</td>
-      <td style="color:${GROUP_COLORS.G1};">${Math.round(grand.G1.km).toLocaleString('es-EC')}</td>
-      <td style="color:${GROUP_COLORS.G1};">${daysByGroup.G1 ? (grand.G1.km / daysByGroup.G1).toFixed(1) : '—'}</td>
-      <td style="color:${GROUP_COLORS.G2};">${grand.G2.rep}</td>
-      <td style="color:${GROUP_COLORS.G2};">${Math.round(grand.G2.km).toLocaleString('es-EC')}</td>
-      <td style="color:${GROUP_COLORS.G2};">${daysByGroup.G2 ? (grand.G2.km / daysByGroup.G2).toFixed(1) : '—'}</td>
-      <td>${grand.rep}</td>
-      <td>${grand.rep ? Math.round((grand.op / grand.rep) * 100) + '%' : '—'}</td>
-      <td>${grand.obs}</td>
-      <td>${grand.cri}</td>
-      <td>${Math.round(grand.km).toLocaleString('es-EC')}</td>
-      <td>${totalDays ? (grand.km / totalDays).toFixed(1) : '—'}</td>
+      <td style="color:${GROUP_COLORS.G1};">${t.repG1}</td>
+      <td style="color:${GROUP_COLORS.G1};">${fmt(t.kmG1)}</td>
+      <td style="color:${GROUP_COLORS.G1};">${t.kmDiaG1 ?? '—'}</td>
+      <td style="color:${GROUP_COLORS.G2};">${t.repG2}</td>
+      <td style="color:${GROUP_COLORS.G2};">${fmt(t.kmG2)}</td>
+      <td style="color:${GROUP_COLORS.G2};">${t.kmDiaG2 ?? '—'}</td>
+      <td>${t.rep}</td>
+      <td>${t.pctOp != null ? t.pctOp + '%' : '—'}</td>
+      <td>${t.obs}</td>
+      <td>${t.cri}</td>
+      <td>${fmt(t.kmTot)}</td>
+      <td>${t.kmDiaTot ?? '—'}</td>
     </tr>`);
 
     body.innerHTML = rows.join('');
+  }
+
+  // ===== Exportar a Excel =====
+  function exportExcel() {
+    if (!aggGroups || typeof XLSX === 'undefined') return;
+    const hoy = new Date();
+    const hoyISO = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+
+    // Hoja 1: Comparativo G1 vs G2
+    const a = aggGroups;
+    const comparativo = [
+      ['ANÁLISIS QUINCENAL POR GRUPO DE TRABAJO — RDV GDR'],
+      [currentPeriodInfo],
+      ['Generado', hoy.toLocaleString('es-EC')],
+      ['Esquema', 'G1 = días 11–25 de cada mes · G2 = día 26 al 10 del mes siguiente'],
+      [],
+      ['Métrica', 'G1', 'G2'],
+      ['Quincenas transcurridas', a.G1.quincenas, a.G2.quincenas],
+      ['Reportes', a.G1.reportes, a.G2.reportes],
+      ['% Operativo',
+        a.G1.reportes ? Math.round((a.G1.op / a.G1.reportes) * 100) / 100 : null,
+        a.G2.reportes ? Math.round((a.G2.op / a.G2.reportes) * 100) / 100 : null],
+      ['Fallas en atención (OBS)', a.G1.obs, a.G2.obs],
+      ['Fallas críticas (CRI)', a.G1.cri, a.G2.cri],
+      ['Km recorridos', Math.round(a.G1.km), Math.round(a.G2.km)],
+      ['Km diario promedio',
+        a.G1.days ? +(a.G1.km / a.G1.days).toFixed(1) : null,
+        a.G2.days ? +(a.G2.km / a.G2.days).toFixed(1) : null]
+    ];
+
+    // Hoja 2: Por vehículo (G1 / G2 / Total)
+    const porVeh = [[
+      'Vehículo',
+      'Rep G1', 'Km G1', 'Km/día G1',
+      'Rep G2', 'Km G2', 'Km/día G2',
+      'Rep Total', '% Operativo', 'OBS', 'CRI', 'Km Total', 'Km/día Total'
+    ]];
+    vehicleRows.forEach(r => porVeh.push([
+      r.veh, r.repG1, r.kmG1, r.kmDiaG1, r.repG2, r.kmG2, r.kmDiaG2,
+      r.rep, r.pctOp != null ? r.pctOp / 100 : null, r.obs, r.cri, r.kmTot, r.kmDiaTot
+    ]));
+    if (grandRow) {
+      porVeh.push([
+        'TOTAL', grandRow.repG1, grandRow.kmG1, grandRow.kmDiaG1,
+        grandRow.repG2, grandRow.kmG2, grandRow.kmDiaG2,
+        grandRow.rep, grandRow.pctOp != null ? grandRow.pctOp / 100 : null,
+        grandRow.obs, grandRow.cri, grandRow.kmTot, grandRow.kmDiaTot
+      ]);
+    }
+
+    // Hoja 3: Detalle por quincena
+    const detalle = [['Grupo', 'Periodo inicio', 'Periodo fin', 'Reportes', '% Operativo', 'OBS', 'CRI', 'Km recorridos', 'Km diario prom.']];
+    groupPeriodStats.forEach(s => detalle.push([
+      s.group,
+      formatDate(s.start),
+      formatDate(s.end),
+      s.reportes,
+      s.pctOp != null ? s.pctOp / 100 : null,
+      s.obs,
+      s.cri,
+      Math.round(s.km),
+      +s.kmDia.toFixed(1)
+    ]));
+
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.aoa_to_sheet(comparativo);
+    ws1['!cols'] = [{ wch: 28 }, { wch: 14 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Comparativo G1-G2');
+
+    const ws2 = XLSX.utils.aoa_to_sheet(porVeh);
+    ws2['!cols'] = [{ wch: 12 }, ...Array(12).fill({ wch: 11 })];
+    // Formato porcentaje para columna % Operativo (índice 8)
+    for (let i = 1; i < porVeh.length; i++) {
+      const cell = ws2[XLSX.utils.encode_cell({ r: i, c: 8 })];
+      if (cell && typeof cell.v === 'number') cell.z = '0%';
+    }
+    XLSX.utils.book_append_sheet(wb, ws2, 'Por Vehículo');
+
+    const ws3 = XLSX.utils.aoa_to_sheet(detalle);
+    ws3['!cols'] = [{ wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 14 }, { wch: 14 }];
+    for (let i = 1; i < detalle.length; i++) {
+      const cell = ws3[XLSX.utils.encode_cell({ r: i, c: 4 })];
+      if (cell && typeof cell.v === 'number') cell.z = '0%';
+    }
+    XLSX.utils.book_append_sheet(wb, ws3, 'Detalle Quincenas');
+
+    XLSX.writeFile(wb, `Analisis_Quincenal_GDR_${hoyISO}.xlsx`);
   }
 
   function renderChart() {
@@ -364,6 +483,9 @@
 
   const grpMetric = document.getElementById('grp-metric');
   if (grpMetric) grpMetric.addEventListener('change', renderChart);
+
+  const btnExcel = document.getElementById('btn-excel');
+  if (btnExcel) btnExcel.addEventListener('click', exportExcel);
 
   load();
 })();
