@@ -39,24 +39,38 @@
       const photos = payload.photos || [];
 
       // 1) Insertar/actualizar reporte (upsert por cod_reporte)
-      const { data: reportRows, error: repError } = await client
+      const reportRow = {
+        cod_reporte: header.cod_reporte,
+        fecha_hora: header.fecha_hora,
+        estado_operativo: header.estado_operativo,
+        codigo_vehiculo: header.codigo_vehiculo,
+        placa: header.placa,
+        kilometraje: header.kilometraje,
+        conductor: header.conductor,
+        inspector: header.inspector,
+        ubicacion: header.ubicacion,
+        obs_general: header.obs_general,
+        archivo: header.archivo,
+        version: header.version,
+        km_sospechoso: !!header.km_sospechoso,
+        km_nota: header.km_nota || '',
+        synced_at: new Date().toISOString()
+      };
+
+      const upsertReport = row => client
         .from('reports')
-        .upsert({
-          cod_reporte: header.cod_reporte,
-          fecha_hora: header.fecha_hora,
-          estado_operativo: header.estado_operativo,
-          codigo_vehiculo: header.codigo_vehiculo,
-          placa: header.placa,
-          kilometraje: header.kilometraje,
-          conductor: header.conductor,
-          inspector: header.inspector,
-          ubicacion: header.ubicacion,
-          obs_general: header.obs_general,
-          archivo: header.archivo,
-          version: header.version,
-          synced_at: new Date().toISOString()
-        }, { onConflict: 'cod_reporte' })
+        .upsert(row, { onConflict: 'cod_reporte' })
         .select('id, cod_reporte');
+
+      let { data: reportRows, error: repError } = await upsertReport(reportRow);
+
+      // Compatibilidad: si aún no se aplicó la migración de km dudoso en la
+      // base, se reintenta sin esas columnas para no perder el reporte.
+      if (repError && /km_sospechoso|km_nota/.test(repError.message || '')) {
+        console.warn('Columnas km_sospechoso/km_nota ausentes. Aplica migration_km_sospechoso.sql en Supabase.');
+        const { km_sospechoso, km_nota, ...legacyRow } = reportRow;
+        ({ data: reportRows, error: repError } = await upsertReport(legacyRow));
+      }
 
       if (repError) throw repError;
       if (!reportRows || !reportRows.length) throw new Error('No se pudo obtener el ID del reporte');
@@ -199,15 +213,25 @@
    */
   async function getLastKm(vehicleCode) {
     try {
-      const { data, error } = await client
+      const lastRows = cols => client
         .from('reports')
-        .select('kilometraje, fecha_hora')
+        .select(cols)
         .eq('codigo_vehiculo', vehicleCode)
         .not('kilometraje', 'is', null)
         .order('fecha_hora', { ascending: false })
-        .limit(1);
+        .limit(10);
+
+      let { data, error } = await lastRows('kilometraje, fecha_hora, km_sospechoso');
+      if (error && /km_sospechoso/.test(error.message || '')) {
+        ({ data, error } = await lastRows('kilometraje, fecha_hora'));
+      }
       if (error) throw error;
-      return { ok: true, data: (data && data[0]) || null };
+
+      // Se compara contra la última lectura CONFIABLE: las marcadas como
+      // dudosas se saltan para no arrastrar el error al siguiente reporte.
+      const rows = data || [];
+      const last = rows.find(r => !r.km_sospechoso) || null;
+      return { ok: true, data: last };
     } catch (err) {
       console.error('Error leyendo último kilometraje:', err);
       return { ok: false, data: null, error: err };

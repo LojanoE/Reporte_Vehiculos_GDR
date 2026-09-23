@@ -86,19 +86,39 @@
 
   /**
    * Filtra lecturas de kilometraje erróneas (tipeos) de UN vehículo.
-   * Usa la mediana local de la ventana ±3 lecturas: una lectura se descarta
-   * si se desvía de su vecindario más que la tolerancia (adaptada al ritmo
-   * de reporteo del vehículo). Robusta ante picos aislados en ambas
-   * direcciones y no genera descartes en cascada.
+   *
+   * Dos filtros independientes:
+   *  1. Marcadas en el formulario: el informe se guardó con km incoherente y
+   *     el usuario lo confirmó (km_sospechoso = true). Se excluyen salvo que
+   *     se pida includeFlagged.
+   *  2. Heurística: mediana local de la ventana ±3 lecturas; una lectura se
+   *     descarta si se desvía de su vecindario más que la tolerancia (adaptada
+   *     al ritmo de reporteo del vehículo). Robusta ante picos aislados en
+   *     ambas direcciones y no genera descartes en cascada.
+   *
    * @param {Array} reports - reportes del mismo vehículo (cualquier orden)
-   * @returns {{valid: Array, discarded: number}} valid queda ordenado asc por fecha
+   * @param {{includeFlagged?: boolean}} [options] - incluir las marcadas como dudosas
+   * @returns {{valid: Array, discarded: number, flagged: number, excluded: number}}
+   *          valid queda ordenado asc por fecha
    */
-  window.filterKmReadings = function (reports) {
+  window.filterKmReadings = function (reports, options) {
+    const includeFlagged = !!(options && options.includeFlagged);
+    let flagged = 0;
     const sorted = (reports || [])
-      .filter(r => r.kilometraje != null && !isNaN(new Date(r.fecha_hora)))
+      .filter(r => {
+        if (r.kilometraje == null || isNaN(new Date(r.fecha_hora))) return false;
+        if (r.km_sospechoso) {
+          flagged++;
+          if (!includeFlagged) return false;
+        }
+        return true;
+      })
       .slice()
       .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
-    if (sorted.length <= 2) return { valid: sorted, discarded: 0 };
+    const excludedFlagged = includeFlagged ? 0 : flagged;
+    if (sorted.length <= 2) {
+      return { valid: sorted, discarded: 0, flagged, excluded: excludedFlagged };
+    }
 
     const kms = sorted.map(r => r.kilometraje);
     const times = sorted.map(r => new Date(r.fecha_hora).getTime());
@@ -121,6 +141,6 @@
       if (Math.abs(kms[i] - med) > tol) { discarded++; continue; }
       valid.push(sorted[i]);
     }
-    return { valid, discarded };
+    return { valid, discarded, flagged, excluded: discarded + excludedFlagged };
   };
 })();

@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS reports (
   obs_general TEXT,
   archivo TEXT,
   version TEXT,
+  -- Kilometraje guardado pese a ser incoherente (el usuario lo confirmó).
+  -- El análisis lo excluye por defecto de los cálculos de km recorridos.
+  km_sospechoso BOOLEAN NOT NULL DEFAULT false,
+  km_nota TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   synced_at TIMESTAMPTZ
 );

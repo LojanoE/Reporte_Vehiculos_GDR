@@ -19,6 +19,8 @@
   let grandRow = null;                     // fila TOTAL por vehículo
   let currentPeriodInfo = '';              // texto de la quincena actual
   let discardedTotalG = 0;                 // lecturas de km descartadas (tipeos)
+  let flaggedTotalG = 0;                   // lecturas marcadas como dudosas al guardar
+  let includeFlagged = false;              // incluir las marcadas en el cálculo de km
   const perVehicleKm = new Map();          // vehículo -> Map(periodIndex -> km válido)
   const periodGroupByIndex = new Map();    // periodIndex -> 'G1'|'G2'
   const daysByGroup = { G1: 0, G2: 0 };    // días transcurridos por grupo (rango filtrado)
@@ -114,6 +116,22 @@
       }
     }
 
+    // ===== Datos base para las vistas filtradas =====
+    allDataQ = data;
+
+    recomputeKmStats();
+    populateQuincenaFilters();
+    applyFilters();
+  }
+
+  /**
+   * Recalcula km por quincena/vehículo y las stats por quincena.
+   * Se vuelve a ejecutar al cambiar el switch de lecturas dudosas.
+   */
+  function recomputeKmStats() {
+    const data = allDataQ;
+    const today = startOfDay(new Date());
+
     // ===== Km por quincena y vehículo (solo lecturas válidas) =====
     const byVehicle = new Map();
     data.forEach(r => {
@@ -123,10 +141,12 @@
     });
     const kmByPeriod = new Map();
     discardedTotalG = 0;
+    flaggedTotalG = 0;
     perVehicleKm.clear();
     byVehicle.forEach((list, veh) => {
-      const { valid, discarded } = window.filterKmReadings(list);
+      const { valid, discarded, flagged } = window.filterKmReadings(list, { includeFlagged });
       discardedTotalG += discarded;
+      flaggedTotalG += flagged;
       for (let i = 1; i < valid.length; i++) {
         const p = window.getWorkGroupPeriod(new Date(valid[i].fecha_hora));
         if (!p) continue;
@@ -166,13 +186,8 @@
       };
     });
 
-    // ===== Datos base para las vistas filtradas =====
-    allDataQ = data;
     periodGroupByIndex.clear();
     groupPeriodStats.forEach(s => periodGroupByIndex.set(s.index, s.group));
-
-    populateQuincenaFilters();
-    applyFilters();
   }
 
   // ===== Filtros de quincenas =====
@@ -256,7 +271,12 @@
         : 'Sin quincenas en el rango seleccionado';
       const parts = [rangeTxt];
       if (discardedTotalG > 0) {
-        parts.push(`⚠️ ${discardedTotalG} lectura(s) de km descartada(s) por inconsistencia (posibles tipeos), excluidas del análisis`);
+        parts.push(`⚠️ ${discardedTotalG} lectura(s) de km descartada(s) automáticamente por inconsistencia (posibles tipeos)`);
+      }
+      if (flaggedTotalG > 0) {
+        parts.push(includeFlagged
+          ? `⚠️ ${flaggedTotalG} lectura(s) marcada(s) como dudosa(s) al guardar están INCLUIDAS en el cálculo de km`
+          : `⚠️ ${flaggedTotalG} lectura(s) marcada(s) como dudosa(s) al guardar, excluidas del cálculo de km`);
       }
       noteEl.textContent = parts.join(' · ');
     }
@@ -414,6 +434,9 @@
         : 'Sin quincenas en el rango seleccionado'],
       ['Generado', hoy.toLocaleString('es-EC')],
       ['Esquema', 'G1 = días 11–25 de cada mes · G2 = día 26 al 10 del mes siguiente'],
+      ['Km dudosos (marcados al guardar)',
+        `${flaggedTotalG} lectura(s) · ${includeFlagged ? 'INCLUIDAS' : 'EXCLUIDAS'} del cálculo de km`],
+      ['Km descartados automáticamente (posibles tipeos)', `${discardedTotalG} lectura(s)`],
       [],
       ['Métrica', 'G1', 'G2'],
       ['Quincenas transcurridas', a.G1.quincenas, a.G2.quincenas],
@@ -553,6 +576,13 @@
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', applyFilters);
   });
+  const chkDudosos = document.getElementById('q-incluir-dudosos');
+  if (chkDudosos) chkDudosos.addEventListener('change', () => {
+    includeFlagged = chkDudosos.checked;
+    recomputeKmStats();
+    applyFilters();
+  });
+
   const btnTodas = document.getElementById('q-todas');
   if (btnTodas) btnTodas.addEventListener('click', () => {
     if (!allPeriods.length) return;

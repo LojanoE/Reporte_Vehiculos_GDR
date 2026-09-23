@@ -387,19 +387,22 @@
     });
     const latest = new Map();
     let discarded = 0;
+    let flagged = 0;
     byVehicle.forEach((list, v) => {
       const res = typeof window.filterKmReadings === 'function'
         ? window.filterKmReadings(list)
-        : { valid: list.slice().sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora)), discarded: 0 };
+        : { valid: list.slice().sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora)), discarded: 0, flagged: 0 };
       discarded += res.discarded;
+      flagged += res.flagged || 0;
       if (res.valid.length) latest.set(v, res.valid[res.valid.length - 1]);
     });
 
     const noteEl = document.getElementById('km-note');
     if (noteEl) {
-      noteEl.textContent = discarded
-        ? `⚠️ ${discarded} lectura(s) de kilometraje descartada(s) por inconsistencia (posibles tipeos) en el rango filtrado.`
-        : '';
+      const notes = [];
+      if (discarded) notes.push(`⚠️ ${discarded} lectura(s) de kilometraje descartada(s) por inconsistencia (posibles tipeos) en el rango filtrado.`);
+      if (flagged) notes.push(`⚠️ ${flagged} lectura(s) marcada(s) como dudosa(s) al guardar el informe, excluidas del cálculo.`);
+      noteEl.textContent = notes.join(' ');
     }
 
     const sorted = Array.from(latest.entries()).sort((a, b) => (b[1].kilometraje || 0) - (a[1].kilometraje || 0));
@@ -759,7 +762,7 @@
         <td>${formatDateTime(r.fecha_hora)}</td>
         <td>${escapeHtml(r.codigo_vehiculo || '—')}</td>
         <td>${escapeHtml(r.placa || '—')}</td>
-        <td>${r.kilometraje != null ? r.kilometraje.toLocaleString('es-EC') : '—'}</td>
+        <td>${r.kilometraje != null ? r.kilometraje.toLocaleString('es-EC') : '—'}${r.km_sospechoso ? ` <span title="${escapeHtml(r.km_nota || 'Kilometraje marcado como dudoso al guardar')}" style="color:#fbbf24;">⚠️</span>` : ''}</td>
         <td>${escapeHtml(r.estado_operativo || '—')}</td>
         <td>${escapeHtml(r.conductor || '—')}</td>
         <td>${escapeHtml(r.inspector || '—')}</td>
@@ -783,7 +786,8 @@
     set('modal-fecha', formatDateTime(report.fecha_hora));
     set('modal-vehiculo', report.codigo_vehiculo || '—');
     set('modal-placa', report.placa || '—');
-    set('modal-km', report.kilometraje != null ? report.kilometraje.toLocaleString('es-EC') : '—');
+    set('modal-km', (report.kilometraje != null ? report.kilometraje.toLocaleString('es-EC') : '—')
+      + (report.km_sospechoso ? `  ⚠️ dudoso — ${report.km_nota || 'no coincide con el registro anterior'}` : ''));
     set('modal-version', report.version || '—');
     set('modal-conductor', report.conductor || '—');
     set('modal-inspector', report.inspector || '—');

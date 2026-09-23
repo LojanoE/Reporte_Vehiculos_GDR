@@ -56,4 +56,23 @@ check('Ritmo real 800 km/día se conserva', res.discarded === 0);
 res = filterKmReadings([]);
 check('Lista vacía OK', res.valid.length === 0 && res.discarded === 0);
 
+// 3) Lecturas marcadas como dudosas al guardar (km_sospechoso)
+const flag = r => Object.assign({}, r, { km_sospechoso: true });
+const serieConDudoso = [mk(12000, 1), flag(mk(1200, 3)), mk(12500, 5), mk(13000, 7)];
+
+res = filterKmReadings(serieConDudoso);
+check('Lectura dudosa excluida por defecto',
+  res.flagged === 1 && res.discarded === 0 && res.excluded === 1 && kmsOf(res) === '12000,12500,13000');
+
+res = filterKmReadings(serieConDudoso, { includeFlagged: true });
+check('Lectura dudosa incluida bajo demanda (la heurística aún puede descartarla)',
+  res.flagged === 1 && res.valid.every(r => r.kilometraje !== 1200) === (res.discarded === 1));
+
+res = filterKmReadings([mk(12000, 1), flag(mk(12400, 3))]);
+check('Dudosa excluida aunque la serie sea corta',
+  res.flagged === 1 && res.excluded === 1 && kmsOf(res) === '12000');
+
+res = filterKmReadings([mk(12000, 1), mk(12400, 3), mk(12900, 5)]);
+check('Sin dudosas: flagged en 0', res.flagged === 0 && res.excluded === 0);
+
 console.log('Listo.');

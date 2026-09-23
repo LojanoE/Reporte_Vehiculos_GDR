@@ -81,8 +81,10 @@ const I18N = {
     valCodigo: 'Código del vehículo es obligatorio.',
     valPlaca: 'La placa es obligatoria.',
     valKm: 'Kilometraje inválido.',
-    valKmRetrocede: (last, f) => `⛔ El kilometraje es MENOR al último registrado (${last.toLocaleString()} km el ${f}). Corrige el tipeo antes de generar.`,
+    valKmRetrocede: (last, f) => `⛔ El kilometraje es MENOR al último registrado (${last.toLocaleString()} km el ${f}). Verifica que no sea un tipeo.`,
     valKmSalto: (diff, last) => `⚠️ Salto de ${diff.toLocaleString()} km respecto al último registro (${last.toLocaleString()} km). Verifica que no sea un tipeo.`,
+    confirmKmSospechoso: (msg) => `${msg}\n\n¿Guardar el informe de todos modos?\n\nAceptar = se guarda y el kilometraje queda MARCADO COMO DUDOSO (se excluye de los cálculos de km del análisis).\nCancelar = volver y corregir el kilometraje.`,
+    toastKmSospechoso: '⚠️ Informe guardado con el kilometraje marcado como dudoso.',
     valFecha: 'Fecha/hora obligatoria.',
     valFoto: 'Las dos fotos son obligatorias.',
 
@@ -204,8 +206,10 @@ const I18N = {
     valCodigo: '车辆编号为必填项。',
     valPlaca: '车牌为必填项。',
     valKm: '里程无效。',
-    valKmRetrocede: (last, f) => `⛔ 里程低于上次记录（${f} 为 ${last.toLocaleString()} 公里）。请更正后再生成。`,
+    valKmRetrocede: (last, f) => `⛔ 里程低于上次记录（${f} 为 ${last.toLocaleString()} 公里）。请确认是否输入有误。`,
     valKmSalto: (diff, last) => `⚠️ 与上次记录（${last.toLocaleString()} 公里）相差 ${diff.toLocaleString()} 公里，请确认是否输入有误。`,
+    confirmKmSospechoso: (msg) => `${msg}\n\n仍要保存报告吗？\n\n确定 = 保存，并将里程标记为“存疑”（分析中的里程统计将排除该读数）。\n取消 = 返回修改里程。`,
+    toastKmSospechoso: '⚠️ 报告已保存，里程已标记为存疑。',
     valFecha: '日期/时间为必填项。',
     valFoto: '两张照片均为必填项。',
 
@@ -601,7 +605,9 @@ function checkMaintenance() {
 }
 
 // === Coherencia de kilometraje (detección de tipeos contra el último registro) ===
-let kmCoherenceBlocked = false;
+// No bloquea el guardado: si el dato es incoherente se pide confirmación y el
+// reporte se guarda con km_sospechoso = true para que el análisis lo excluya.
+let kmCoherenceSuspect = false;
 let kmCoherenceMsg = '';
 const lastKmCache = {}; // vehicleCode -> { kilometraje, fecha_hora } | null
 
@@ -625,7 +631,7 @@ async function fetchLastKm(vehicleCode) {
 }
 
 async function checkKmCoherence() {
-  kmCoherenceBlocked = false;
+  kmCoherenceSuspect = false;
   kmCoherenceMsg = '';
   if (!kmWarning || !km) return;
   const code = currentVehicleCode();
@@ -641,9 +647,10 @@ async function checkKmCoherence() {
   const diff = currentKm - last.kilometraje;
   const f = new Date(last.fecha_hora).toLocaleDateString();
   if (diff < 0) {
-    kmCoherenceBlocked = true;
+    kmCoherenceSuspect = true;
     kmCoherenceMsg = t('valKmRetrocede', last.kilometraje, f);
   } else if (diff > (window.KM_MAX_JUMP || 1500)) {
+    kmCoherenceSuspect = true;
     kmCoherenceMsg = t('valKmSalto', diff, last.kilometraje);
   }
 
@@ -654,7 +661,7 @@ async function checkKmCoherence() {
         : kmCoherenceMsg;
     }
     kmWarning.classList.remove('hidden');
-    kmWarning.style.color = kmCoherenceBlocked ? '#f87171' : '';
+    kmWarning.style.color = diff < 0 ? '#f87171' : '';
     showToast(kmCoherenceMsg);
   }
 }
@@ -947,7 +954,9 @@ function getReportPayload() {
       ubicacion: ubicacion && ubicacion.value || '',
       obs_general: obsGeneral && obsGeneral.value || '',
       archivo: code,
-      version: version
+      version: version,
+      km_sospechoso: !!kmMarcadoSospechoso,
+      km_nota: kmMarcadoSospechoso ? kmCoherenceMsg : ''
     },
     systems,
     photos: [
@@ -958,12 +967,22 @@ function getReportPayload() {
 }
 
 let informeGenerado = false;
+// El usuario confirmó guardar con un kilometraje incoherente en este informe
+let kmMarcadoSospechoso = false;
 
 if (btnGenerar) btnGenerar.addEventListener('click', async ()=>{
   const err = validar();
   if (err) { alert(err); return; }
+
+  // Kilometraje incoherente: no se bloquea el informe. Se confirma con el
+  // usuario y, si acepta, el reporte queda marcado como km dudoso.
   await checkKmCoherence();
-  if (kmCoherenceBlocked) { alert(kmCoherenceMsg || t('valKm')); return; }
+  kmMarcadoSospechoso = false;
+  if (kmCoherenceSuspect) {
+    if (!confirm(t('confirmKmSospechoso', kmCoherenceMsg))) return;
+    kmMarcadoSospechoso = true;
+  }
+
   const code = await fillReport();
   document.title = code;
   if (btnImprimir) {
@@ -988,6 +1007,7 @@ if (btnGenerar) btnGenerar.addEventListener('click', async ()=>{
       } else if (res.queued) {
         showToast('Sin conexión: reporte guardado localmente. Se sincronizará automáticamente.');
       }
+      if (kmMarcadoSospechoso) showToast(t('toastKmSospechoso'));
     } catch (e) {
       console.warn('No se pudo guardar en Supabase:', e);
     }
