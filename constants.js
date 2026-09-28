@@ -5,7 +5,9 @@
 (function () {
   'use strict';
 
-  // Umbrales de mantenimiento por vehículo (motor y caja/corona)
+  // Umbrales de mantenimiento por vehículo (motor y caja/corona).
+  // Valores de respaldo: la fuente real es la tabla maintenance_alerts de
+  // Supabase, editable desde el dashboard. Se usan mientras carga o sin conexión.
   window.MAINTENANCE_ALERTS = {
     'ECO23': { motor: 93408, caja: 93408 },
     'ECO62': { motor: 31652, caja: 41652 },
@@ -14,6 +16,19 @@
     'ECO71': { motor: 15000, caja: 20000 },
     'ECO36': { motor: 219886, caja: 219886 },
     'M01':   { motor: 172841, caja: 182562 },
+  };
+
+  /**
+   * Reemplaza los umbrales manteniendo la MISMA referencia de objeto:
+   * app.js y dashboard.js capturan window.MAINTENANCE_ALERTS en una const al
+   * cargar, así que reasignarlo no llegaría a esos módulos.
+   * @param {Object} map - { ECO23: {motor, caja}, ... }
+   */
+  window.applyMaintenanceAlerts = function (map) {
+    const target = window.MAINTENANCE_ALERTS;
+    Object.keys(target).forEach(k => { delete target[k]; });
+    Object.keys(map || {}).forEach(k => { target[k] = map[k]; });
+    return target;
   };
 
   window.ALERT_RANGE = 4000;

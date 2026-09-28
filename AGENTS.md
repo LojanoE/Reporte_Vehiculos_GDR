@@ -48,9 +48,14 @@
 
 ## Data Hardcoded in `app.js`
 - `vehiclePlateMap` — maps vehicle codes (e.g., `ECO04`) to license plates.
-- `MAINTENANCE_ALERTS` — per-vehicle motor/gearbox maintenance thresholds.
 - `SYSTEMS` — the inspected systems (sourced from `I18N[currentLang].systems`).
-- If adding/removing vehicles or changing thresholds, edit `app.js` directly.
+- If adding/removing vehicles or changing systems, edit `app.js` / `constants.js` directly.
+
+## Maintenance Thresholds (`MAINTENANCE_ALERTS`)
+- Per-vehicle motor/gearbox km thresholds live in the Supabase table **`maintenance_alerts`** (`codigo_vehiculo`, `motor`, `caja`, `activo`, `updated_at`; see `migration_maintenance_alerts.sql`), not hardcoded in code anymore.
+- `constants.js` still defines `window.MAINTENANCE_ALERTS` with the last-known values as an **offline fallback**, plus `window.applyMaintenanceAlerts(map)` which mutates that object in place (both `app.js` and `dashboard.js` capture it in a `const`, so it must be mutated, not reassigned).
+- `supabase-client.js` exposes `getMaintenanceAlertsFromSupabase()`, `saveMaintenanceAlertsToSupabase(map)` and `refreshMaintenanceAlerts()` (fetch + apply in one call). `app.js` calls `refreshMaintenanceAlerts()` on load so the form's maintenance warnings use live thresholds.
+- **Editing UI:** dashboard → "Kilometrajes objetivo de mantenimiento" card → "Editar kilometrajes". Plain-text editor (`CÓDIGO | MOTOR | CAJA` per line, `#` comments, `-` for n/a), parsed and upserted to Supabase; removing a line from the text deactivates that vehicle (`activo = false`) since the anon key has no DELETE grant.
 
 ## Image Handling
 - Photos are resized client-side with Canvas API to **1400px width**, JPEG **85% quality**.

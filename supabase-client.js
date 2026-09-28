@@ -238,8 +238,94 @@
     }
   }
 
+  /**
+   * Lee los umbrales de mantenimiento (motor / caja) por vehículo.
+   * @returns {Promise<{ok:boolean, data?:Object, updatedAt?:string|null, error?:any}>}
+   *          data = { ECO23: {motor, caja}, ... }
+   */
+  async function getMaintenanceAlerts() {
+    try {
+      const { data, error } = await client
+        .from('maintenance_alerts')
+        .select('codigo_vehiculo, motor, caja, updated_at')
+        .eq('activo', true)
+        .order('codigo_vehiculo');
+
+      if (error) throw error;
+
+      const map = {};
+      let updatedAt = null;
+      (data || []).forEach(r => {
+        map[r.codigo_vehiculo] = { motor: r.motor || 0, caja: r.caja || 0 };
+        if (!updatedAt || r.updated_at > updatedAt) updatedAt = r.updated_at;
+      });
+      return { ok: true, data: map, updatedAt };
+    } catch (err) {
+      console.error('Error leyendo umbrales de mantenimiento:', err);
+      return { ok: false, error: err };
+    }
+  }
+
+  /**
+   * Guarda los umbrales de mantenimiento. Los vehículos que ya no estén en el
+   * mapa se marcan activo = false (el anon key no tiene permiso de DELETE).
+   * @param {Object} map - { ECO23: {motor, caja}, ... }
+   */
+  async function saveMaintenanceAlerts(map) {
+    try {
+      const now = new Date().toISOString();
+      const codes = Object.keys(map || {});
+      const rows = codes.map(code => ({
+        codigo_vehiculo: code,
+        motor: map[code].motor || null,
+        caja: map[code].caja || null,
+        activo: true,
+        updated_at: now
+      }));
+
+      if (rows.length) {
+        const { error } = await client
+          .from('maintenance_alerts')
+          .upsert(rows, { onConflict: 'codigo_vehiculo' });
+        if (error) throw error;
+      }
+
+      // Baja lógica de los que se quitaron del editor
+      let deactivate = client
+        .from('maintenance_alerts')
+        .update({ activo: false, updated_at: now })
+        .eq('activo', true);
+      if (codes.length) {
+        deactivate = deactivate.not('codigo_vehiculo', 'in', `(${codes.map(c => `"${c}"`).join(',')})`);
+      }
+      const { error: delError } = await deactivate;
+      if (delError) throw delError;
+
+      return { ok: true };
+    } catch (err) {
+      console.error('Error guardando umbrales de mantenimiento:', err);
+      return { ok: false, error: err };
+    }
+  }
+
+  /**
+   * Carga los umbrales desde Supabase y los aplica sobre window.MAINTENANCE_ALERTS.
+   * Si falla (sin conexión o tabla ausente) se mantienen los de constants.js.
+   * @returns {Promise<boolean>} true si se aplicaron valores de la nube
+   */
+  async function refreshMaintenanceAlerts() {
+    if (!navigator.onLine || typeof window.applyMaintenanceAlerts !== 'function') return false;
+    const res = await getMaintenanceAlerts();
+    if (!res.ok || !res.data || !Object.keys(res.data).length) return false;
+    window.applyMaintenanceAlerts(res.data);
+    return true;
+  }
+
   window.saveReportToSupabase = saveReport;
   window.getReportsFromSupabase = getReports;
   window.getStatsFromSupabase = getStats;
   window.getLastKmFromSupabase = getLastKm;
+  window.getMaintenanceAlertsFromSupabase = getMaintenanceAlerts;
+  window.saveMaintenanceAlertsToSupabase = saveMaintenanceAlerts;
+  window.refreshMaintenanceAlerts = refreshMaintenanceAlerts;
 })();

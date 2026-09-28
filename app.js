@@ -703,6 +703,12 @@ if (codSelect) codSelect.addEventListener('change', e => {
   }
 });
 if (fecha) fecha.addEventListener('change', ()=> { updateLiveCode(); saveDraft(); });
+
+// Umbrales de mantenimiento actualizados desde Supabase (editables en el dashboard)
+if (typeof window.refreshMaintenanceAlerts === 'function') {
+  window.refreshMaintenanceAlerts().then(updated => { if (updated) checkMaintenance(); });
+}
+
 [placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el && el.addEventListener('input', () => { if(el === km) { checkMaintenance(); checkKmCoherence(); } saveDraft(); }));
 
 // Image previews + resize

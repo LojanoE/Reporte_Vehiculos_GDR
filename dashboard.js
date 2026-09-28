@@ -738,6 +738,186 @@
     });
   }
 
+  // ========== Editor de kilometrajes objetivo ==========
+  // Los umbrales viven en la tabla maintenance_alerts de Supabase y se editan
+  // como texto plano para no tener que tocar constants.js.
+
+  const maintEditor = {
+    box: document.getElementById('maint-editor'),
+    text: document.getElementById('maint-editor-text'),
+    msg: document.getElementById('maint-editor-msg'),
+    meta: document.getElementById('maint-edit-meta'),
+    btnEdit: document.getElementById('btn-maint-edit'),
+    btnSave: document.getElementById('btn-maint-save'),
+    btnCancel: document.getElementById('btn-maint-cancel')
+  };
+
+  const MAINT_HEADER = [
+    '# Kilometrajes objetivo de mantenimiento',
+    '# Formato:  CÓDIGO | MOTOR | CAJA      (usa - si no aplica)',
+    ''
+  ].join('\n');
+
+  function alertsToText(map) {
+    const codes = Object.keys(map).sort();
+    const width = codes.reduce((w, c) => Math.max(w, c.length), 6);
+    const lines = codes.map(c => {
+      const a = map[c] || {};
+      const motor = a.motor ? String(a.motor) : '-';
+      const caja = a.caja ? String(a.caja) : '-';
+      return `${c.padEnd(width)} | ${motor.padStart(7)} | ${caja.padStart(7)}`;
+    });
+    return MAINT_HEADER + lines.join('\n') + '\n';
+  }
+
+  function parseAlertsText(text) {
+    const map = {};
+    const errors = [];
+    const warnings = [];
+    const plates = window.VEHICLE_PLATE_MAP || {};
+
+    (text || '').split('\n').forEach((raw, i) => {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) return;
+      const n = i + 1;
+
+      const parts = line.replace(/[|;,\t]/g, ' ').split(/\s+/).filter(Boolean);
+      if (parts.length !== 3) {
+        errors.push(`Línea ${n}: se esperaban 3 valores (código, motor, caja) y hay ${parts.length}.`);
+        return;
+      }
+
+      const code = parts[0].toUpperCase();
+      if (!/^[A-Z0-9-]{2,10}$/.test(code)) {
+        errors.push(`Línea ${n}: código de vehículo inválido "${parts[0]}".`);
+        return;
+      }
+      if (map[code]) {
+        errors.push(`Línea ${n}: el vehículo ${code} está repetido.`);
+        return;
+      }
+      if (!plates[code]) warnings.push(`${code} no está en la lista de vehículos conocidos.`);
+
+      const nums = [];
+      for (const label of ['motor', 'caja']) {
+        const rawVal = parts[label === 'motor' ? 1 : 2];
+        if (rawVal === '-' || rawVal === '—') { nums.push(0); continue; }
+        const clean = rawVal.replace(/[.\s']/g, '');
+        if (!/^\d+$/.test(clean)) {
+          errors.push(`Línea ${n} (${code}): el kilometraje de ${label} "${rawVal}" no es un número.`);
+          nums.push(null);
+          continue;
+        }
+        const val = parseInt(clean, 10);
+        if (val > 2000000) {
+          errors.push(`Línea ${n} (${code}): el kilometraje de ${label} (${val.toLocaleString('es-EC')}) parece un tipeo.`);
+          nums.push(null);
+          continue;
+        }
+        nums.push(val);
+      }
+      if (nums.includes(null)) return;
+      map[code] = { motor: nums[0], caja: nums[1] };
+    });
+
+    return { map, errors, warnings };
+  }
+
+  function setMaintMsg(text, kind) {
+    if (!maintEditor.msg) return;
+    const colors = { error: '#f87171', ok: '#34d399', warn: '#fbbf24' };
+    maintEditor.msg.style.color = colors[kind] || '#94a3b8';
+    maintEditor.msg.textContent = text || '';
+  }
+
+  function setMaintMeta(source, updatedAt) {
+    if (!maintEditor.meta) return;
+    const n = Object.keys(MAINTENANCE_ALERTS).length;
+    const origen = source === 'cloud'
+      ? (updatedAt ? `actualizado ${formatDateTime(updatedAt)}` : 'sincronizado')
+      : 'valores locales (sin conexión)';
+    maintEditor.meta.textContent = `${n} vehículo${n === 1 ? '' : 's'} · ${origen}`;
+  }
+
+  async function loadMaintenanceAlerts() {
+    if (typeof getMaintenanceAlertsFromSupabase !== 'function') {
+      setMaintMeta('local');
+      return;
+    }
+    const res = await getMaintenanceAlertsFromSupabase();
+    if (res.ok && res.data && Object.keys(res.data).length && typeof window.applyMaintenanceAlerts === 'function') {
+      window.applyMaintenanceAlerts(res.data);
+      setMaintMeta('cloud', res.updatedAt);
+    } else {
+      setMaintMeta('local');
+    }
+  }
+
+  function openMaintEditor() {
+    if (!maintEditor.box) return;
+    maintEditor.text.value = alertsToText(MAINTENANCE_ALERTS);
+    setMaintMsg('');
+    maintEditor.box.classList.remove('hidden');
+    maintEditor.btnEdit.textContent = '✕ Cerrar editor';
+    maintEditor.text.focus();
+  }
+
+  function closeMaintEditor() {
+    if (!maintEditor.box) return;
+    maintEditor.box.classList.add('hidden');
+    maintEditor.btnEdit.textContent = '✎ Editar kilometrajes';
+    setMaintMsg('');
+  }
+
+  async function saveMaintEditor() {
+    const { map, errors, warnings } = parseAlertsText(maintEditor.text.value);
+
+    if (errors.length) {
+      setMaintMsg('No se guardó nada:\n' + errors.join('\n'), 'error');
+      return;
+    }
+    if (!Object.keys(map).length) {
+      setMaintMsg('No se guardó nada: no hay ningún vehículo en el texto.', 'error');
+      return;
+    }
+    if (typeof saveMaintenanceAlertsToSupabase !== 'function') {
+      setMaintMsg('No se guardó: cliente de Supabase no disponible.', 'error');
+      return;
+    }
+
+    const removed = Object.keys(MAINTENANCE_ALERTS).filter(c => !map[c]);
+    if (removed.length && !confirm(`Se quitarán las alertas de: ${removed.join(', ')}.\n\n¿Continuar?`)) return;
+
+    maintEditor.btnSave.disabled = true;
+    setMaintMsg('Guardando...', 'warn');
+
+    const res = await saveMaintenanceAlertsToSupabase(map);
+    maintEditor.btnSave.disabled = false;
+
+    if (!res.ok) {
+      setMaintMsg(`Error al guardar: ${res.error?.message || res.error}`, 'error');
+      return;
+    }
+
+    window.applyMaintenanceAlerts(map);
+    setMaintMeta('cloud', new Date().toISOString());
+    setMaintMsg(
+      `Guardado. ${Object.keys(map).length} vehículo(s) actualizados.` +
+      (warnings.length ? '\nAviso: ' + warnings.join(' ') : ''),
+      warnings.length ? 'warn' : 'ok'
+    );
+    renderMaintenance(currentData);
+  }
+
+  if (maintEditor.btnEdit) {
+    maintEditor.btnEdit.addEventListener('click', () => {
+      if (maintEditor.box.classList.contains('hidden')) openMaintEditor();
+      else closeMaintEditor();
+    });
+  }
+  if (maintEditor.btnSave) maintEditor.btnSave.addEventListener('click', saveMaintEditor);
+  if (maintEditor.btnCancel) maintEditor.btnCancel.addEventListener('click', closeMaintEditor);
+
   // ========== Table ==========
 
   function renderTable(data) {
@@ -858,7 +1038,8 @@
     // Load filtered data AND all data for maintenance projection (no date filter)
     const [filteredRes, allRes] = await Promise.all([
       getReportsFromSupabase(filters),
-      getReportsFromSupabase({ limit: 5000 })
+      getReportsFromSupabase({ limit: 5000 }),
+      loadMaintenanceAlerts()
     ]);
 
     if (!filteredRes.ok || !allRes.ok) {

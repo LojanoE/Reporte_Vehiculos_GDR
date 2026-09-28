@@ -46,6 +46,16 @@ CREATE TABLE IF NOT EXISTS report_photos (
   UNIQUE (report_id, foto_index)
 );
 
+-- Umbrales de mantenimiento por vehículo, editables desde el dashboard
+-- (ver migration_maintenance_alerts.sql para el detalle y los datos iniciales)
+CREATE TABLE IF NOT EXISTS maintenance_alerts (
+  codigo_vehiculo TEXT PRIMARY KEY,
+  motor           INTEGER,
+  caja            INTEGER,
+  activo          BOOLEAN NOT NULL DEFAULT true,
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Índices útiles para consultas del dashboard
 CREATE INDEX IF NOT EXISTS idx_reports_fecha_hora ON reports(fecha_hora DESC);
 CREATE INDEX IF NOT EXISTS idx_reports_codigo_vehiculo ON reports(codigo_vehiculo);
@@ -60,6 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_systems_estado ON report_systems(estado);
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE report_systems ENABLE ROW LEVEL SECURITY;
 ALTER TABLE report_photos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE maintenance_alerts ENABLE ROW LEVEL SECURITY;
 
 -- Políticas para reports
 CREATE POLICY "Allow anon select on reports"
@@ -91,3 +102,13 @@ CREATE POLICY "Allow anon insert on report_photos"
 
 CREATE POLICY "Allow anon update on report_photos"
   ON report_photos FOR UPDATE USING (true) WITH CHECK (true);
+
+-- Políticas para maintenance_alerts (sin DELETE: se usa baja lógica con activo=false)
+CREATE POLICY "Allow anon select on maintenance_alerts"
+  ON maintenance_alerts FOR SELECT USING (true);
+
+CREATE POLICY "Allow anon insert on maintenance_alerts"
+  ON maintenance_alerts FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow anon update on maintenance_alerts"
+  ON maintenance_alerts FOR UPDATE USING (true) WITH CHECK (true);
