@@ -26,6 +26,12 @@
     .badge-ok { background: rgba(52,211,153,.2); color: #34d399; }
     .badge-warn { background: rgba(251,191,36,.2); color: #fbbf24; }
     .badge-danger { background: rgba(248,113,113,.2); color: #f87171; }
+    #maint-editor-table input { width: 100%; background: rgba(15,23,42,.8); border: 1px solid rgba(255,255,255,.15); border-radius: .5rem; padding: .35rem .5rem; color: #e2e8f0; font-size: .875rem; }
+    #maint-editor-table input.maint-cell-code { text-transform: uppercase; max-width: 10rem; }
+    #maint-editor-table input.maint-cell-motor, #maint-editor-table input.maint-cell-caja { max-width: 9rem; }
+    #maint-editor-table td:last-child { width: 2.5rem; text-align: center; }
+    .maint-row-remove { background: transparent; border: none; cursor: pointer; font-size: 1rem; line-height: 1; padding: .25rem; }
+    .maint-row-remove:hover { opacity: .7; }
   </style>
 </head>
 <body>
@@ -174,13 +180,22 @@
       </div>
       <div id="maint-editor" class="hidden">
         <p class="text-xs text-slate-400 mb-2">
-          Un vehículo por línea con el formato <code class="text-slate-300">CÓDIGO | MOTOR | CAJA</code>.
-          Las líneas que empiezan con <code class="text-slate-300">#</code> son comentarios.
-          Usa <code class="text-slate-300">-</code> si un umbral no aplica. Borrar una línea desactiva ese vehículo.
+          Deja <strong>Motor</strong> o <strong>Caja</strong> en blanco si ese umbral no aplica para el vehículo.
         </p>
-        <textarea id="maint-editor-text" rows="14" spellcheck="false" wrap="off"
-          class="w-full bg-slate-900 border border-white/15 rounded-lg p-3 text-sm"
-          style="font-family: ui-monospace, Consolas, monospace; line-height:1.6; resize:vertical;"></textarea>
+        <div class="table-wrap mb-2">
+          <table id="maint-editor-table">
+            <thead>
+              <tr>
+                <th>Vehículo</th>
+                <th>Motor (km)</th>
+                <th>Caja (km)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="maint-editor-body"></tbody>
+          </table>
+        </div>
+        <button id="btn-maint-add-row" type="button" class="btn btn-ghost border-white/20" style="padding:.35rem .75rem; font-size:.8rem;">+ Agregar vehículo</button>
         <div id="maint-editor-msg" class="text-xs mt-2 whitespace-pre-line"></div>
         <div class="flex flex-wrap gap-2 mt-3">
           <button id="btn-maint-save" class="btn btn-primary">Guardar cambios</button>
@@ -315,6 +330,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="constants.js?v=260928-01"></script>
   <script src="supabase-client.js?v=260928-01"></script>
-  <script src="dashboard.js?v=260928-01"></script>
+  <script src="dashboard.js?v=260928-02"></script>
 </body>
 </html>

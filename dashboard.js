@@ -740,77 +740,112 @@
 
   // ========== Editor de kilometrajes objetivo ==========
   // Los umbrales viven en la tabla maintenance_alerts de Supabase y se editan
-  // como texto plano para no tener que tocar constants.js.
+  // como una tabla de celdas (una fila por vehículo) para no tener que tocar
+  // constants.js ni escribir texto con formato.
 
   const maintEditor = {
     box: document.getElementById('maint-editor'),
-    text: document.getElementById('maint-editor-text'),
+    body: document.getElementById('maint-editor-body'),
     msg: document.getElementById('maint-editor-msg'),
     meta: document.getElementById('maint-edit-meta'),
     btnEdit: document.getElementById('btn-maint-edit'),
+    btnAddRow: document.getElementById('btn-maint-add-row'),
     btnSave: document.getElementById('btn-maint-save'),
     btnCancel: document.getElementById('btn-maint-cancel')
   };
 
-  const MAINT_HEADER = [
-    '# Kilometrajes objetivo de mantenimiento',
-    '# Formato:  CÓDIGO | MOTOR | CAJA      (usa - si no aplica)',
-    ''
-  ].join('\n');
+  let maintEditorInitialCodes = [];
 
-  function alertsToText(map) {
-    const codes = Object.keys(map).sort();
-    const width = codes.reduce((w, c) => Math.max(w, c.length), 6);
-    const lines = codes.map(c => {
-      const a = map[c] || {};
-      const motor = a.motor ? String(a.motor) : '-';
-      const caja = a.caja ? String(a.caja) : '-';
-      return `${c.padEnd(width)} | ${motor.padStart(7)} | ${caja.padStart(7)}`;
-    });
-    return MAINT_HEADER + lines.join('\n') + '\n';
+  function createMaintRow(code, motor, caja) {
+    const tr = document.createElement('tr');
+
+    const tdCode = document.createElement('td');
+    const inputCode = document.createElement('input');
+    inputCode.type = 'text';
+    inputCode.className = 'maint-cell-code';
+    inputCode.value = code || '';
+    inputCode.maxLength = 10;
+    tdCode.appendChild(inputCode);
+
+    const tdMotor = document.createElement('td');
+    const inputMotor = document.createElement('input');
+    inputMotor.type = 'number';
+    inputMotor.className = 'maint-cell-motor';
+    inputMotor.min = '0';
+    inputMotor.step = '1';
+    if (motor) inputMotor.value = motor;
+    tdMotor.appendChild(inputMotor);
+
+    const tdCaja = document.createElement('td');
+    const inputCaja = document.createElement('input');
+    inputCaja.type = 'number';
+    inputCaja.className = 'maint-cell-caja';
+    inputCaja.min = '0';
+    inputCaja.step = '1';
+    if (caja) inputCaja.value = caja;
+    tdCaja.appendChild(inputCaja);
+
+    const tdRemove = document.createElement('td');
+    const btnRemove = document.createElement('button');
+    btnRemove.type = 'button';
+    btnRemove.className = 'maint-row-remove';
+    btnRemove.title = 'Quitar vehículo';
+    btnRemove.textContent = '🗑';
+    btnRemove.addEventListener('click', () => tr.remove());
+    tdRemove.appendChild(btnRemove);
+
+    tr.append(tdCode, tdMotor, tdCaja, tdRemove);
+    return tr;
   }
 
-  function parseAlertsText(text) {
+  function renderMaintEditorRows(map) {
+    if (!maintEditor.body) return;
+    maintEditor.body.innerHTML = '';
+    Object.keys(map).sort().forEach(code => {
+      const a = map[code] || {};
+      maintEditor.body.appendChild(createMaintRow(code, a.motor, a.caja));
+    });
+  }
+
+  function readMaintEditorRows() {
     const map = {};
     const errors = [];
     const warnings = [];
     const plates = window.VEHICLE_PLATE_MAP || {};
 
-    (text || '').split('\n').forEach((raw, i) => {
-      const line = raw.trim();
-      if (!line || line.startsWith('#')) return;
+    Array.from(maintEditor.body.querySelectorAll('tr')).forEach((tr, i) => {
       const n = i + 1;
+      const codeInput = tr.querySelector('.maint-cell-code');
+      const motorInput = tr.querySelector('.maint-cell-motor');
+      const cajaInput = tr.querySelector('.maint-cell-caja');
 
-      const parts = line.replace(/[|;,\t]/g, ' ').split(/\s+/).filter(Boolean);
-      if (parts.length !== 3) {
-        errors.push(`Línea ${n}: se esperaban 3 valores (código, motor, caja) y hay ${parts.length}.`);
+      const code = (codeInput.value || '').trim().toUpperCase();
+      if (!code) {
+        errors.push(`Fila ${n}: falta el código de vehículo.`);
         return;
       }
-
-      const code = parts[0].toUpperCase();
       if (!/^[A-Z0-9-]{2,10}$/.test(code)) {
-        errors.push(`Línea ${n}: código de vehículo inválido "${parts[0]}".`);
+        errors.push(`Fila ${n}: código de vehículo inválido "${codeInput.value}".`);
         return;
       }
       if (map[code]) {
-        errors.push(`Línea ${n}: el vehículo ${code} está repetido.`);
+        errors.push(`Fila ${n}: el vehículo ${code} está repetido.`);
         return;
       }
       if (!plates[code]) warnings.push(`${code} no está en la lista de vehículos conocidos.`);
 
       const nums = [];
-      for (const label of ['motor', 'caja']) {
-        const rawVal = parts[label === 'motor' ? 1 : 2];
-        if (rawVal === '-' || rawVal === '—') { nums.push(0); continue; }
-        const clean = rawVal.replace(/[.\s']/g, '');
-        if (!/^\d+$/.test(clean)) {
-          errors.push(`Línea ${n} (${code}): el kilometraje de ${label} "${rawVal}" no es un número.`);
+      for (const [label, input] of [['motor', motorInput], ['caja', cajaInput]]) {
+        const rawVal = (input.value || '').trim();
+        if (!rawVal) { nums.push(0); continue; }
+        if (!/^\d+$/.test(rawVal)) {
+          errors.push(`Fila ${n} (${code}): el kilometraje de ${label} "${rawVal}" no es un número entero.`);
           nums.push(null);
           continue;
         }
-        const val = parseInt(clean, 10);
+        const val = parseInt(rawVal, 10);
         if (val > 2000000) {
-          errors.push(`Línea ${n} (${code}): el kilometraje de ${label} (${val.toLocaleString('es-EC')}) parece un tipeo.`);
+          errors.push(`Fila ${n} (${code}): el kilometraje de ${label} (${val.toLocaleString('es-EC')}) parece un tipeo.`);
           nums.push(null);
           continue;
         }
@@ -855,11 +890,13 @@
 
   function openMaintEditor() {
     if (!maintEditor.box) return;
-    maintEditor.text.value = alertsToText(MAINTENANCE_ALERTS);
+    maintEditorInitialCodes = Object.keys(MAINTENANCE_ALERTS);
+    renderMaintEditorRows(MAINTENANCE_ALERTS);
     setMaintMsg('');
     maintEditor.box.classList.remove('hidden');
     maintEditor.btnEdit.textContent = '✕ Cerrar editor';
-    maintEditor.text.focus();
+    const firstInput = maintEditor.body.querySelector('.maint-cell-code');
+    if (firstInput) firstInput.focus();
   }
 
   function closeMaintEditor() {
@@ -869,15 +906,24 @@
     setMaintMsg('');
   }
 
+  function addMaintRow() {
+    if (!maintEditor.body) return;
+    const tr = createMaintRow('', '', '');
+    maintEditor.body.appendChild(tr);
+    const codeInput = tr.querySelector('.maint-cell-code');
+    codeInput.scrollIntoView({ block: 'nearest' });
+    codeInput.focus();
+  }
+
   async function saveMaintEditor() {
-    const { map, errors, warnings } = parseAlertsText(maintEditor.text.value);
+    const { map, errors, warnings } = readMaintEditorRows();
 
     if (errors.length) {
       setMaintMsg('No se guardó nada:\n' + errors.join('\n'), 'error');
       return;
     }
     if (!Object.keys(map).length) {
-      setMaintMsg('No se guardó nada: no hay ningún vehículo en el texto.', 'error');
+      setMaintMsg('No se guardó nada: no hay ningún vehículo en la tabla.', 'error');
       return;
     }
     if (typeof saveMaintenanceAlertsToSupabase !== 'function') {
@@ -885,7 +931,7 @@
       return;
     }
 
-    const removed = Object.keys(MAINTENANCE_ALERTS).filter(c => !map[c]);
+    const removed = maintEditorInitialCodes.filter(c => !map[c]);
     if (removed.length && !confirm(`Se quitarán las alertas de: ${removed.join(', ')}.\n\n¿Continuar?`)) return;
 
     maintEditor.btnSave.disabled = true;
@@ -917,6 +963,7 @@
   }
   if (maintEditor.btnSave) maintEditor.btnSave.addEventListener('click', saveMaintEditor);
   if (maintEditor.btnCancel) maintEditor.btnCancel.addEventListener('click', closeMaintEditor);
+  if (maintEditor.btnAddRow) maintEditor.btnAddRow.addEventListener('click', addMaintRow);
 
   // ========== Table ==========
 
