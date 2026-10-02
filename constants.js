@@ -49,6 +49,39 @@
     'BZ-01': 'Sin placa'
   };
 
+  // Marca por vehículo (hoja "Datos de camionetas" del formulario ECSA)
+  window.VEHICLE_BRAND_MAP = {
+    'ECO04': 'FORD',
+    'ECO05': 'FORD',
+    'ECO06': 'FORD',
+    'ECO23': 'FORD',
+    'ECO26': 'FORD',
+    'ECO36': 'FORD',
+    'ECO62': 'JAC',
+    'ECO70': 'JAC',
+    'ECO71': 'JAC'
+  };
+
+  // ====== Solicitud de mantenimiento ECSA ======
+  window.REQUEST_DEPT_DEFAULT = 'Departamento de Gestión de Depósitos de Relaves 尾矿库管理部';
+  window.REQUEST_TIPO_DEFAULT = 'MTTO PREVENTIVO/CORRECTIVO 预防性/纠正性维护';
+  window.REQUEST_TALLER_DEFAULT = 'Taller de mantenimiento para maquinarias y vehículos 工程机械与车辆维修车间';
+  window.REQUEST_ROLES = {
+    responsable_dept: 'Responsable de dept. del solicitante 设备报修单位负责人',
+    solicitante: 'Solicitante de reparación 设备报修人',
+    inspector_ge: 'Inspector del equipo 设备检查人',
+    responsable_mtto: 'Responsable del dpto. de mantenimiento 维修部门负责人',
+    aprobador: 'Aprobado por 审批人'
+  };
+  // Respaldo offline: la fuente real es la tabla request_signers de Supabase.
+  window.REQUEST_SIGNERS_DEFAULT = {
+    responsable_dept: ['Ing. César Vásquez', 'Ing. Andrés Vásquez', 'Ing. Hernán Gavilanes', 'Ing. Frans Celi', 'Zhang Congsong'],
+    solicitante: ['Ing. Frans Celi', 'Ing. Jorge Beltrán', 'Ing. Juan Silverio'],
+    inspector_ge: ['Hu Nan'],
+    responsable_mtto: ['Li Lingzhi'],
+    aprobador: ['Wang Hongliang/Dai Jianggen']
+  };
+
   window.OPERATIVE_STATUSES = {
     OPERATIVO: { label: 'Operativo', color: '#34d399' },
     'MANT. PREVENTIVO': { label: 'Mant. Preventivo', color: '#fbbf24' },

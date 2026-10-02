@@ -105,5 +105,12 @@
 - No password gate — the document is meant to be shared/printed for management.
 - **Print:** `window.print()` with A4 print CSS (white background). Linked from `dashboard.html` header.
 
+## Maintenance Request
+- URL: `solicitud-mantenimiento.html` + `solicitud-mantenimiento.js` — formulario de solicitud de mantenimiento ECSA (hoja 1 solicitud + hoja 2 registro de mantenimiento) imprimible en **2 páginas A4** (`page-break-before` en la hoja 2). Linked from `index.html`, `dashboard.html` and `analisis-quincenal.html`.
+- Tables (`migration_maintenance_requests.sql`): `maintenance_requests` (código `SM-YYMM-<ECO>-NN`, correlativo mensual por vehículo; `estado` PENDIENTE/EN_REPARACION/CERRADA; `fallas` jsonb) and `request_signers` (firmantes por rol, baja lógica `activo=false`).
+- `supabase-client.js`: `getRequestSignersFromSupabase`, `saveRequestSignersToSupabase`, `getNextRequestCode`, `saveMaintenanceRequestToSupabase`, `getMaintenanceRequestsFromSupabase`, `updateMaintenanceRequestStatusInSupabase`.
+- `constants.js`: `VEHICLE_BRAND_MAP`, `REQUEST_*` defaults and `REQUEST_SIGNERS_DEFAULT` (offline fallback). Firmas are editable per request; the list is managed from "Gestionar firmantes".
+- The photo stays local (printed only). Hoja 2 and the G.E. block are printed pre-filled where known, rest blank for handwriting. No offline queue: if saving fails the form still prints.
+
 ## Existing Docs
 - `GEMINI.md` contains a longer project description. Treat it as background, not source of truth; executable behavior lives in `app.js`, `dashboard.js`, `supabase-client.js`, `offline-queue.js`, and `styles.css`.

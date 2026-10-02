@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solicitud de Mantenimiento — RDV GDR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+    .dash-card { background: rgba(30,41,59,.8); border: 1px solid rgba(255,255,255,.1); border-radius: .75rem; padding: 1rem; }
+    .btn { display: inline-flex; align-items: center; gap: .5rem; border-radius: .5rem; padding: .5rem 1rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: #059669; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #047857; }
+    .btn-ghost { background: transparent; color: #e2e8f0; border: 1px solid rgba(255,255,255,.2); }
+    .btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,.05); }
+    .btn-sm { padding: .25rem .6rem; font-size: .8rem; }
+    label { display: flex; flex-direction: column; font-size: .875rem; color: #94a3b8; }
+    input, select, textarea { background: rgba(15,23,42,.8); border: 1px solid rgba(255,255,255,.15); border-radius: .5rem; padding: .4rem .6rem; color: #e2e8f0; margin-top: .25rem; font-size: .9rem; }
+    textarea { resize: vertical; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    table.tbl th, table.tbl td { padding: .4rem; border-bottom: 1px solid rgba(255,255,255,.1); text-align: left; vertical-align: top; }
+    table.tbl th { color: #94a3b8; font-weight: 600; }
+    .table-wrap { overflow-x: auto; }
+    .badge { display: inline-block; padding: .15rem .4rem; border-radius: .375rem; font-size: .75rem; font-weight: 600; }
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+    .modal-bg.hidden { display: none; }
+    .modal { background: #1e293b; border: 1px solid rgba(255,255,255,.15); border-radius: .75rem; padding: 1rem; width: 100%; max-width: 56rem; max-height: 90vh; overflow-y: auto; }
+    .foto-thumb { max-height: 140px; border-radius: .5rem; border: 1px solid rgba(255,255,255,.15); }
+
+    /* ===== Documento imprimible (oculto en pantalla) ===== */
+    #solicitud-print { display: none; }
+    .pd { font-family: Arial, Helvetica, sans-serif; color: #000; font-size: 8.5pt; background: #fff; }
+    .pd-page { width: 100%; }
+    .pd-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .pd-head img { height: 14mm; width: auto; }
+    .pd-title { flex: 1; text-align: center; font-weight: 700; font-size: 12pt; line-height: 1.25; }
+    .pd-code { text-align: right; font-size: 8pt; margin-bottom: 3px; }
+    .pd-t { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .pd-t th, .pd-t td { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; color: #000; text-align: left; font-size: 8.5pt; word-wrap: break-word; }
+    .pd-t .band { background: #e5e7eb; text-align: center; font-weight: 700; }
+    .pd-t .lbl { background: #f3f4f6; font-weight: 600; font-size: 8pt; }
+    .pd-t .c { text-align: center; }
+    .pd-t .sig { height: 13mm; vertical-align: bottom; }
+    .pd-t .r-falla td { height: 8mm; }
+    .pd-t .foto { height: 48mm; text-align: center; vertical-align: middle; }
+    .pd-t .foto img { max-height: 46mm; max-width: 100%; }
+    .pd-t .big { height: 38mm; vertical-align: top; white-space: pre-wrap; }
+    .pd-t .mid { height: 22mm; vertical-align: top; }
+    .pd-notes { font-size: 6.8pt; line-height: 1.25; margin-top: 4px; }
+    .pd-notes p { margin: 0 0 2px; }
+    .pd-break { page-break-before: always; break-before: page; }
+    .pd-chk { display: inline-block; width: 31%; font-size: 8pt; padding: 2px 0; }
+
+    @media print {
+      @page { size: A4; margin: 10mm; }
+      :root { color-scheme: light; }
+      html, body { background: #fff !important; color: #000 !important; }
+      .no-print { display: none !important; }
+      #solicitud-print { display: block !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-6xl mx-auto p-4 md:p-8 space-y-6 no-print">
+
+    <!-- ===== Encabezado ===== -->
+    <div class="dash-card">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          <h1 class="text-2xl font-bold">Solicitud de mantenimiento ECSA</h1>
+          <p class="text-slate-400 text-sm">Formulario de solicitud + registro de mantenimiento del equipo (2 hojas en un solo documento)</p>
+        </div>
+        <div class="flex gap-4 text-sm">
+          <a href="dashboard.html" class="text-emerald-400 hover:underline">← Dashboard</a>
+          <a href="index.html" class="text-blue-400 hover:underline">Informe diario</a>
+        </div>
+      </div>
+      <p id="edit-banner" class="hidden mt-3 text-sm text-amber-300"></p>
+    </div>
+
+    <!-- ===== Formulario ===== -->
+    <div class="dash-card space-y-5">
+      <h2 class="font-semibold">1. Equipo y solicitud</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <label>Fecha de solicitud
+          <input type="date" id="f-fecha">
+        </label>
+        <label>Vehículo (ECO)
+          <select id="f-eco"></select>
+        </label>
+        <label>Marca
+          <input type="text" id="f-marca">
+        </label>
+        <label>Placa
+          <input type="text" id="f-placa">
+        </label>
+        <label>Kilometraje actual
+          <input type="number" id="f-km" min="0" inputmode="numeric">
+          <span id="km-hint" class="text-xs text-slate-500 mt-1"></span>
+        </label>
+        <label class="md:col-span-3">Departamento del equipo
+          <input type="text" id="f-dept">
+        </label>
+      </div>
+
+      <h2 class="font-semibold">2. Fallas / causa de la reparación</h2>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr><th style="width:2.5rem;">N.º</th><th style="width:22%;">Causa de la falla</th><th>Detalle de reparación</th><th>Observaciones</th><th style="width:3rem;"></th></tr>
+          </thead>
+          <tbody id="fallas-body"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="button" id="btn-add-falla" class="btn btn-ghost btn-sm">+ Agregar falla</button>
+        <span class="text-xs text-slate-500">Máximo 6 filas para que entren en la hoja.</span>
+      </div>
+      <datalist id="dl-sistemas"></datalist>
+
+      <label>Fotografía (opcional, solo se imprime; no se sube a la nube)
+        <input type="file" id="f-foto" accept="image/*">
+      </label>
+      <div id="foto-wrap" class="hidden flex items-center gap-3">
+        <img id="foto-prev" class="foto-thumb" alt="Vista previa">
+        <button type="button" id="btn-quitar-foto" class="btn btn-ghost btn-sm">Quitar foto</button>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold">3. Firmas y datos del Dpto. de G.E.</h2>
+        <button type="button" id="btn-signers" class="btn btn-ghost btn-sm">👥 Gestionar firmantes</button>
+      </div>
+      <p class="text-xs text-slate-500 -mt-3">Elige de la lista o escribe otro nombre: cada campo es editable en esta solicitud.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label>Responsable de dept. del solicitante (firma)
+          <input type="text" id="f-responsable_dept" list="dl-responsable_dept" autocomplete="off">
+        </label>
+        <label>Solicitante de reparación (firma)
+          <input type="text" id="f-solicitante" list="dl-solicitante" autocomplete="off">
+        </label>
+        <label>Inspector del equipo (firma)
+          <input type="text" id="f-inspector_ge" list="dl-inspector_ge" autocomplete="off">
+        </label>
+        <label>Responsable del dpto. de mantenimiento (firma)
+          <input type="text" id="f-responsable_mtto" list="dl-responsable_mtto" autocomplete="off">
+        </label>
+        <label>Aprobado por (firma)
+          <input type="text" id="f-aprobador" list="dl-aprobador" autocomplete="off">
+        </label>
+        <label>Tipo de reparación recomendada
+          <input type="text" id="f-tipo">
+        </label>
+        <label class="md:col-span-2">Taller de reparaciones sugerido
+          <input type="text" id="f-taller">
+        </label>
+      </div>
+      <div id="datalists"></div>
+
+      <div class="flex flex-wrap items-center gap-3 pt-2">
+        <button type="button" id="btn-save-print" class="btn btn-primary">💾 Guardar e imprimir</button>
+        <button type="button" id="btn-print" class="btn btn-ghost">🖨️ Solo imprimir</button>
+        <button type="button" id="btn-clear" class="btn btn-ghost">Limpiar</button>
+        <span id="status-msg" class="text-sm"></span>
+      </div>
+    </div>
+
+    <!-- ===== Historial ===== -->
+    <div class="dash-card">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold">Historial de solicitudes</h2>
+        <button type="button" id="btn-refresh" class="btn btn-ghost btn-sm">↻ Actualizar</button>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr><th>Código</th><th>Fecha</th><th>Vehículo</th><th>Fallas</th><th>Estado</th><th></th></tr>
+          </thead>
+          <tbody id="hist-body"><tr><td colspan="6" class="text-slate-400">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal: gestionar firmantes ===== -->
+  <div id="signers-modal" class="modal-bg hidden no-print">
+    <div class="modal">
+      <h2 class="text-lg font-semibold mb-1">Gestionar firmantes</h2>
+      <p class="text-sm text-slate-400 mb-3">Un nombre por línea. Para renombrar, edita la línea; para quitar, bórrala. Los cambios aplican a las próximas solicitudes (las ya guardadas no cambian).</p>
+      <div id="signers-fields" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      <div class="flex items-center gap-3 mt-4">
+        <button type="button" id="btn-signers-save" class="btn btn-primary">Guardar firmantes</button>
+        <button type="button" id="btn-signers-cancel" class="btn btn-ghost">Cancelar</button>
+        <span id="signers-msg" class="text-sm"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DOCUMENTO IMPRIMIBLE: hoja 1 + hoja 2 ===== -->
+  <div id="solicitud-print" class="pd">
+
+    <!-- Hoja 1: solicitud -->
+    <section class="pd-page">
+      <div class="pd-head">
+        <img src="LOGO GDR.jpeg" alt="GDR">
+        <div class="pd-title">Formulario de solicitud de mantenimiento equipo ECSA<br>ECSA设备维修申请单</div>
+        <img src="ECUACORRIENTE.png" alt="Ecuacorriente">
+      </div>
+      <div class="pd-code">N.º de solicitud 编号: <b data-p="cod"></b></div>
+
+      <table class="pd-t">
+        <colgroup><col><col><col><col><col><col><col><col></colgroup>
+        <tr><th colspan="8" class="band">Entidad de solicitación de reparación de equipos 设备申请报修单位</th></tr>
+        <tr><td colspan="3" class="lbl">Fecha de solicitud (dd/mm/aaaa)<br>申请日期</td><td colspan="5" data-p="fecha"></td></tr>
+        <tr><td colspan="3" class="lbl">Dept. del equipo<br>设备所属部门</td><td colspan="5" data-p="dept"></td></tr>
+        <tr>
+          <td colspan="3" class="lbl">Código/Nombre/Serie de equipo (placa)<br>设备编号/名称/设备序列号（车牌）</td>
+          <td colspan="2" class="c"><b data-p="eco"></b></td>
+          <td class="c" data-p="marca"></td>
+          <td colspan="2" class="c" data-p="placa"></td>
+        </tr>
+        <tr><td colspan="3" class="lbl">Kilometraje actual o tiempo de funcionamiento<br>当前里程或运行时间</td><td colspan="5" data-p="km"></td></tr>
+        <tr>
+          <td colspan="3" class="lbl sig">Responsable de dept. del solicitante (firma)<br>设备报修单位负责人（签字）</td>
+          <td colspan="5" class="sig" data-p="responsable_dept"></td>
+        </tr>
+        <tr>
+          <td colspan="3" class="lbl sig">Solicitante de reparación (firma)<br>设备报修人（签字）</td>
+          <td colspan="5" class="sig" data-p="solicitante"></td>
+        </tr>
+        <tr>
+          <th class="c">序号<br>N.º</th>
+          <th colspan="2" class="c">Causa del fracaso<br>故障原因</th>
+          <th colspan="3" class="c">Detalle de reparación<br>维修细节</th>
+          <th colspan="2" class="c">OBSERVACIONES<br>注释</th>
+        </tr>
+        <tbody id="p-fallas"></tbody>
+        <tr><td colspan="8" class="foto" id="p-foto"><span style="color:#888;font-size:8pt;">Fotografía 照片</span></td></tr>
+
+        <tr><th colspan="8" class="band">Dpto. de G.E. 设备管理部</th></tr>
+        <tr><td colspan="3" class="lbl">Tipo de reparación recomendada<br>建议维修类型</td><td colspan="5" data-p="tipo"></td></tr>
+        <tr><td colspan="3" class="lbl">Taller de reparaciones sugerido<br>建议维修车间</td><td colspan="5" data-p="taller"></td></tr>
+        <tr>
+          <td colspan="3" class="lbl sig">Inspector del equipo (firmado)<br>设备检查人（签字）</td>
+          <td colspan="5" class="sig" data-p="inspector_ge"></td>
+        </tr>
+        <tr>
+          <td colspan="3" class="lbl sig">Responsable del departamento de mantenimiento (firma)<br>维修部门负责人（签字）</td>
+          <td colspan="5" class="sig" data-p="responsable_mtto"></td>
+        </tr>
+        <tr>
+          <td colspan="3" class="lbl sig">Aprobado por (firmado)<br>审批人（签字）</td>
+          <td colspan="5" class="sig" data-p="aprobador"></td>
+        </tr>
+      </table>
+
+      <div class="pd-notes">
+        <p>注Notas:</p>
+        <p>1. 设备管理部相关专业人员对设备使用单位报修情况进行检查，指定设备维修方式或维修类型，签字确认后，方可进行维修。<br>
+        1. Los profesionales pertinentes del departamento de gestión de equipos inspeccionarán el estado de reparación de los usuarios de los equipos. Después de especificar el método de mantenimiento del equipo o el tipo de mantenimiento y firmar para confirmar, se puede realizar el mantenimiento.</p>
+        <p>2. 设备所属部门在设备损坏后，经公司相关维修部门指定人员认定，无法在公司范围内修复，由维修部门负责人签字确认后，设备管理部安排外委维修。<br>
+        2. Después de que el equipo es dañado por el departamento al que pertenece, el personal designado del departamento de mantenimiento correspondiente de la empresa determina que no puede repararse dentro de la empresa después de la firma y confirmación del responsable del departamento de mantenimiento. El departamento de gestión de equipos subcontratará el mantenimiento.</p>
+      </div>
+    </section>
+
+    <!-- Hoja 2: registro de mantenimiento -->
+    <section class="pd-page pd-break">
+      <div class="pd-head">
+        <img src="LOGO GDR.jpeg" alt="GDR">
+        <div class="pd-title">设备维修记录<br>REGISTRO DE MANTENIMIENTO DEL EQUIPO</div>
+        <img src="ECUACORRIENTE.png" alt="Ecuacorriente">
+      </div>
+      <div class="pd-code">N.º de solicitud 编号: <b data-p="cod"></b></div>
+
+      <table class="pd-t">
+        <colgroup><col><col><col><col><col><col><col><col></colgroup>
+        <tr>
+          <th colspan="2" class="c">设 备 名 称<br>Nombre del equipo</th>
+          <th colspan="2" class="c">规格型号<br>Modelo y especificaciones</th>
+          <th colspan="2" class="c">修复时间段<br>Periodo de reparación</th>
+          <th colspan="2" class="c">维修人员/厂家<br>Proveedor de reparación</th>
+        </tr>
+        <tr>
+          <td colspan="2" class="c sig" data-p="equipo"></td>
+          <td colspan="2" class="c sig" data-p="modelo"></td>
+          <td colspan="2" class="sig"></td>
+          <td colspan="2" class="sig"></td>
+        </tr>
+        <tr>
+          <td colspan="2" class="lbl mid">设备故障引起原因<br>Causas de los fallos del equipo</td>
+          <td colspan="6" class="mid">
+            <span class="pd-chk">☐ 机件磨损 Desgaste</span>
+            <span class="pd-chk">☐ 非法操作 Manejo incorrecto</span>
+            <span class="pd-chk">☐ 人为损坏 Daños humanos</span>
+            <span class="pd-chk">☐ 超电压 Sobretensión</span>
+            <span class="pd-chk" style="width:62%;">☐ 保养维修故障 Fallo durante el mantenimiento y/o reparación</span>
+            <span class="pd-chk" style="width:96%;">☐ 其它 Otros：______________________________________________</span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" class="lbl big">故障原因描述<br>Descripción de la causa de fallo</td>
+          <td colspan="6" class="big" data-p="desc_falla"></td>
+        </tr>
+        <tr>
+          <td colspan="2" class="lbl big">维修措施方法<br>Medidas de reparación</td>
+          <td colspan="6" class="big"></td>
+        </tr>
+        <tr>
+          <td colspan="2" class="lbl mid">维修检收情况<br>Aceptación del equipo reparado</td>
+          <td colspan="2" class="mid"></td>
+          <td colspan="2" class="lbl mid">其它问题<br>Otros problemas</td>
+          <td colspan="2" class="mid"></td>
+        </tr>
+        <tr>
+          <td colspan="2" class="lbl sig">填表人<br>Rellenado por：</td>
+          <td colspan="2" class="sig"></td>
+          <td colspan="2" class="lbl sig">填表时间<br>Fecha：</td>
+          <td colspan="2" class="sig"></td>
+        </tr>
+      </table>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="constants.js?v=261002-01"></script>
+  <script src="supabase-client.js?v=261002-01"></script>
+  <script src="solicitud-mantenimiento.js?v=261002-01"></script>
+</body>
+</html>

@@ -321,6 +321,147 @@
     return true;
   }
 
+  // ====== Solicitudes de mantenimiento ECSA ======
+
+  /**
+   * Firmantes activos agrupados por rol: { solicitante: ['Ing. ...'], ... }
+   */
+  async function getRequestSigners() {
+    try {
+      const { data, error } = await client
+        .from('request_signers')
+        .select('rol, nombre, orden')
+        .eq('activo', true)
+        .order('orden')
+        .order('nombre');
+      if (error) throw error;
+      const map = {};
+      (data || []).forEach(r => { (map[r.rol] = map[r.rol] || []).push(r.nombre); });
+      return { ok: true, data: map };
+    } catch (err) {
+      console.error('Error leyendo firmantes:', err);
+      return { ok: false, error: err };
+    }
+  }
+
+  /**
+   * Guarda los firmantes. Los que ya no estén en la lista se marcan activo = false
+   * (el anon key no tiene DELETE).
+   * @param {Object} map - { rol: [nombre, ...] }
+   */
+  async function saveRequestSigners(map) {
+    try {
+      const now = new Date().toISOString();
+      const rows = [];
+      Object.keys(map || {}).forEach(rol => {
+        const seen = new Set();
+        (map[rol] || []).forEach((nombre, i) => {
+          const n = String(nombre || '').trim();
+          if (!n || seen.has(n)) return;
+          seen.add(n);
+          rows.push({ rol, nombre: n, orden: i + 1, activo: true, updated_at: now });
+        });
+      });
+
+      // Baja lógica de todo lo activo, luego se reactiva/inserta lo vigente
+      const { error: offError } = await client
+        .from('request_signers')
+        .update({ activo: false, updated_at: now })
+        .eq('activo', true);
+      if (offError) throw offError;
+
+      if (rows.length) {
+        const { error } = await client
+          .from('request_signers')
+          .upsert(rows, { onConflict: 'rol,nombre' });
+        if (error) throw error;
+      }
+      return { ok: true };
+    } catch (err) {
+      console.error('Error guardando firmantes:', err);
+      return { ok: false, error: err };
+    }
+  }
+
+  /**
+   * Siguiente código correlativo del mes: SM-YYMM-<ECO>-NN
+   * @param {string} eco   - código de vehículo (ej. ECO62)
+   * @param {string} fecha - YYYY-MM-DD
+   */
+  async function getNextRequestCode(eco, fecha) {
+    const [y, m] = fecha.split('-');
+    const prefix = `SM-${y.slice(2)}${m}-${eco}-`;
+    let n = 1;
+    try {
+      const { data, error } = await client
+        .from('maintenance_requests')
+        .select('cod_solicitud')
+        .like('cod_solicitud', `${prefix}%`);
+      if (error) throw error;
+      (data || []).forEach(r => {
+        const k = parseInt(r.cod_solicitud.slice(prefix.length), 10);
+        if (!isNaN(k) && k >= n) n = k + 1;
+      });
+    } catch (err) {
+      console.error('Error calculando correlativo (se usa 01):', err);
+    }
+    return prefix + String(n).padStart(2, '0');
+  }
+
+  async function saveMaintenanceRequest(row) {
+    try {
+      const payload = Object.assign({}, row, { updated_at: new Date().toISOString() });
+      const { error } = await client
+        .from('maintenance_requests')
+        .upsert(payload, { onConflict: 'cod_solicitud' });
+      if (error) throw error;
+      return { ok: true };
+    } catch (err) {
+      console.error('Error guardando solicitud de mantenimiento:', err);
+      return { ok: false, error: err };
+    }
+  }
+
+  async function getMaintenanceRequests(filters) {
+    try {
+      const f = filters || {};
+      let query = client
+        .from('maintenance_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(f.limit || 50);
+      if (f.estado) query = query.eq('estado', f.estado);
+      if (f.vehicle) query = query.eq('codigo_vehiculo', f.vehicle);
+      const { data, error } = await query;
+      if (error) throw error;
+      return { ok: true, data: data || [] };
+    } catch (err) {
+      console.error('Error leyendo solicitudes de mantenimiento:', err);
+      return { ok: false, data: [], error: err };
+    }
+  }
+
+  async function updateMaintenanceRequestStatus(cod, estado) {
+    try {
+      const { error } = await client
+        .from('maintenance_requests')
+        .update({ estado, updated_at: new Date().toISOString() })
+        .eq('cod_solicitud', cod);
+      if (error) throw error;
+      return { ok: true };
+    } catch (err) {
+      console.error('Error actualizando estado de la solicitud:', err);
+      return { ok: false, error: err };
+    }
+  }
+
+  window.getRequestSignersFromSupabase = getRequestSigners;
+  window.saveRequestSignersToSupabase = saveRequestSigners;
+  window.getNextRequestCode = getNextRequestCode;
+  window.saveMaintenanceRequestToSupabase = saveMaintenanceRequest;
+  window.getMaintenanceRequestsFromSupabase = getMaintenanceRequests;
+  window.updateMaintenanceRequestStatusInSupabase = updateMaintenanceRequestStatus;
+
   window.saveReportToSupabase = saveReport;
   window.getReportsFromSupabase = getReports;
   window.getStatsFromSupabase = getStats;

@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS maintenance_alerts (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Solicitudes de mantenimiento ECSA y firmantes editables
+-- (ver migration_maintenance_requests.sql para columnas, políticas y datos iniciales)
+
 -- Índices útiles para consultas del dashboard
 CREATE INDEX IF NOT EXISTS idx_reports_fecha_hora ON reports(fecha_hora DESC);
 CREATE INDEX IF NOT EXISTS idx_reports_codigo_vehiculo ON reports(codigo_vehiculo);
