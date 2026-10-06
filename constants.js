@@ -9,12 +9,12 @@
   // Valores de respaldo: la fuente real es la tabla maintenance_alerts de
   // Supabase, editable desde el dashboard. Se usan mientras carga o sin conexión.
   window.MAINTENANCE_ALERTS = {
-    'ECO23': { motor: 93408, caja: 93408 },
-    'ECO62': { motor: 31652, caja: 41652 },
+    'ECO23': { motor: 98268, caja: 113268 },
+    'ECO62': { motor: 36668, caja: 41652 },
     'ECO26': { motor: 134833, caja: 144044 },
-    'ECO70': { motor: 25000, caja: 25000 },
-    'ECO71': { motor: 15000, caja: 20000 },
-    'ECO36': { motor: 219886, caja: 219886 },
+    'ECO70': { motor: 29996, caja: 30006 },
+    'ECO71': { motor: 20007, caja: 35007 },
+    'ECO36': { motor: 228170, caja: 243170 },
     'M01':   { motor: 172841, caja: 182562 },
   };
 
@@ -30,6 +30,13 @@
     Object.keys(map || {}).forEach(k => { target[k] = map[k]; });
     return target;
   };
+
+  // Último mapa recibido de Supabase en este dispositivo: es mejor respaldo
+  // offline que los valores de arriba, que pueden estar desactualizados.
+  try {
+    const saved = JSON.parse(localStorage.getItem('RDV_GDR_MAINT_ALERTS') || 'null');
+    if (saved && saved.map && Object.keys(saved.map).length) window.applyMaintenanceAlerts(saved.map);
+  } catch (e) { /* localStorage no disponible o JSON inválido: se usan los de respaldo */ }
 
   window.ALERT_RANGE = 4000;
 

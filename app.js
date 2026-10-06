@@ -609,7 +609,8 @@ function checkMaintenance() {
 // reporte se guarda con km_sospechoso = true para que el análisis lo excluya.
 let kmCoherenceSuspect = false;
 let kmCoherenceMsg = '';
-const lastKmCache = {}; // vehicleCode -> { kilometraje, fecha_hora } | null
+const LAST_KM_TTL_MS = 2 * 60 * 1000;
+const lastKmCache = {}; // vehicleCode -> { data: { kilometraje, fecha_hora } | null, at: ms }
 
 function currentVehicleCode() {
   if (codSelect && codSelect.value && codSelect.value !== 'OTRO') return codSelect.value;
@@ -618,15 +619,18 @@ function currentVehicleCode() {
 }
 
 async function fetchLastKm(vehicleCode) {
-  if (Object.prototype.hasOwnProperty.call(lastKmCache, vehicleCode)) return lastKmCache[vehicleCode];
+  const cached = lastKmCache[vehicleCode];
+  if (cached && (Date.now() - cached.at) < LAST_KM_TTL_MS) return cached.data;
   let result = null;
   if (window.SUPABASE_READY && navigator.onLine && typeof getLastKmFromSupabase === 'function') {
     try {
       const res = await getLastKmFromSupabase(vehicleCode);
-      if (res.ok && res.data) result = res.data;
-    } catch (e) { /* sin conexión: se omite la verificación */ }
+      if (res.ok) {
+        result = res.data || null;
+        lastKmCache[vehicleCode] = { data: result, at: Date.now() };
+      }
+    } catch (e) { /* sin conexión: se omite la verificación y no se cachea */ }
   }
-  lastKmCache[vehicleCode] = result;
   return result;
 }
 
@@ -704,10 +708,58 @@ if (codSelect) codSelect.addEventListener('change', e => {
 });
 if (fecha) fecha.addEventListener('change', ()=> { updateLiveCode(); saveDraft(); });
 
-// Umbrales de mantenimiento actualizados desde Supabase (editables en el dashboard)
-if (typeof window.refreshMaintenanceAlerts === 'function') {
-  window.refreshMaintenanceAlerts().then(updated => { if (updated) checkMaintenance(); });
+// Umbrales de mantenimiento y último km desde Supabase (editables en el dashboard).
+// Se repite al volver a la app, al recuperar la red o al restaurar la pestaña,
+// para no quedarse con datos viejos en celulares que mantienen la página viva.
+let lastLiveRefresh = 0;
+async function refreshLiveData(force) {
+  const now = Date.now();
+  if (!force && now - lastLiveRefresh < 60 * 1000) return;
+  lastLiveRefresh = now;
+  Object.keys(lastKmCache).forEach(k => delete lastKmCache[k]);
+  if (typeof window.refreshMaintenanceAlerts === 'function') {
+    try { await window.refreshMaintenanceAlerts(); } catch (e) {}
+  }
+  checkMaintenance();
+  checkKmCoherence();
 }
+refreshLiveData(true);
+
+window.addEventListener('online', () => refreshLiveData(true));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { refreshLiveData(false); checkAppVersion(); }
+});
+window.addEventListener('pageshow', (e) => {
+  if (!e.persisted) return;
+  // Restaurada desde bfcache: si el informe ya se generó, el formulario queda limpio
+  if (informeGenerado) {
+    try { localStorage.removeItem(KEY); } catch (err) {}
+    resetFormState();
+  }
+  refreshLiveData(true);
+  checkAppVersion();
+});
+
+// Si el navegador sirvió JS viejo desde caché, se detecta con version.json y se recarga una vez
+const APP_VERSION = '261006-01';
+let lastVersionCheck = 0;
+async function checkAppVersion() {
+  const now = Date.now();
+  if (now - lastVersionCheck < 3 * 60 * 1000 || !navigator.onLine) return;
+  lastVersionCheck = now;
+  try {
+    const res = await fetch('version.json?t=' + now, { cache: 'no-store' });
+    if (!res.ok) return;
+    const { v } = await res.json();
+    if (v && v !== APP_VERSION && sessionStorage.getItem('RDV_GDR_RELOADED_FOR') !== v) {
+      sessionStorage.setItem('RDV_GDR_RELOADED_FOR', v);
+      sessionStorage.setItem('RDV_GDR_AUTO_RELOAD', '1');
+      saveDraft();
+      location.reload();
+    }
+  } catch (e) { /* sin red: se omite */ }
+}
+checkAppVersion();
 
 [placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el && el.addEventListener('input', () => { if(el === km) { checkMaintenance(); checkKmCoherence(); } saveDraft(); }));
 
@@ -756,6 +808,33 @@ setupFotoInput('#foto2-gallery', prev2, (d) => foto2Data = d);
 
 // Draft
 const KEY = 'RDV_GDR_DRAFT';
+const DRAFT_MAX_AGE_MS = 12 * 60 * 60 * 1000; // un borrador más viejo se descarta
+let informeGenerado = false;
+
+// Deja el formulario en blanco (sin tocar el borrador guardado)
+function resetFormState(){
+  if (form) form.reset();
+  foto1Data = null; foto2Data = null;
+  if (prev1) prev1.classList.add('hidden');
+  if (prev2) prev2.classList.add('hidden');
+  if (fecha) fecha.value = nowLocal();
+  if (codSelect) codSelect.value = '';
+  if (cod) {
+    cod.disabled = false;
+    cod.value = '';
+    cod.classList.add('hidden');
+  }
+  informeGenerado = false;
+  kmCoherenceSuspect = false;
+  kmCoherenceMsg = '';
+  if (kmWarning) { kmWarning.textContent = ''; kmWarning.classList.add('hidden'); }
+  updateLiveCode();
+  if (btnImprimir) {
+    btnImprimir.disabled = true;
+    btnImprimir.classList.remove('btn-highlight');
+  }
+}
+
 function saveDraft(){
   const sys = $$('select[id^=sys-]').map(s => ({name: s.dataset.sysEs, val: s.value, note: $(`#${s.id.replace('-sel','-note')}`).value || ''}));
   let selectedCod = '';
@@ -770,7 +849,8 @@ function saveDraft(){
     placa: placa && placa.value || '', km: km && km.value || '', fecha: fecha && fecha.value || '',
     conductor: conductor && conductor.value || '', inspector: inspector && inspector.value || '', ubicacion: ubicacion && ubicacion.value || '',
     obsGeneral: obsGeneral && obsGeneral.value || '', apto: aptoSi && aptoSi.checked ? 'SI' : 'NO',
-    sys, foto1Data, foto2Data, _t: new Date().toLocaleString(),
+    sys, foto1Data, foto2Data, _t: new Date().toLocaleString(), _ts: Date.now(),
+    generado: informeGenerado,
     lang: currentLang
   };
   try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
@@ -779,23 +859,15 @@ function loadDraft(){
   try {
     const nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
     const isReload = nav ? nav.type === 'reload' : (performance.navigation && performance.navigation.type === 1);
-    if (isReload) {
+    // Recarga automática por versión nueva: se conserva el borrador
+    let autoReload = false;
+    try {
+      autoReload = sessionStorage.getItem('RDV_GDR_AUTO_RELOAD') === '1';
+      sessionStorage.removeItem('RDV_GDR_AUTO_RELOAD');
+    } catch(_) {}
+    if (isReload && !autoReload) {
       try { localStorage.removeItem(KEY); } catch(e){}
-      if (form) form.reset();
-      foto1Data = null; foto2Data = null;
-      if (prev1) prev1.classList.add('hidden');
-      if (prev2) prev2.classList.add('hidden');
-      if (fecha) fecha.value = nowLocal();
-      if (codSelect) codSelect.value = '';
-      if (cod) {
-        cod.disabled = false;
-        cod.value = '';
-      }
-      updateLiveCode();
-      if (btnImprimir) {
-        btnImprimir.disabled = true;
-        btnImprimir.classList.remove('btn-highlight');
-      }
+      resetFormState();
       return;
     }
   } catch(_) {}
@@ -804,6 +876,13 @@ function loadDraft(){
   if (!raw) return;
   try {
     const d = JSON.parse(raw);
+    // Borrador de un informe ya generado o demasiado viejo: no se restaura
+    // (evita mostrar el kilometraje anterior en una inspección nueva)
+    if (d.generado === true || !d._ts || (Date.now() - d._ts) > DRAFT_MAX_AGE_MS) {
+      try { localStorage.removeItem(KEY); } catch(e){}
+      resetFormState();
+      return;
+    }
     // Restore language preference if saved in draft
     if (d.lang && I18N[d.lang]) {
       currentLang = d.lang;
@@ -972,7 +1051,6 @@ function getReportPayload() {
   };
 }
 
-let informeGenerado = false;
 // El usuario confirmó guardar con un kilometraje incoherente en este informe
 let kmMarcadoSospechoso = false;
 
@@ -996,8 +1074,8 @@ if (btnGenerar) btnGenerar.addEventListener('click', async ()=>{
     btnImprimir.classList.add('btn-highlight');
   }
   showToast(t('toastGenerado'));
-  saveDraft();
   informeGenerado = true;
+  saveDraft();
 
   // Incrementar versión para el siguiente reporte del mismo vehículo/día
   const dNow = fecha && fecha.value ? new Date(fecha.value) : new Date();
@@ -1014,6 +1092,13 @@ if (btnGenerar) btnGenerar.addEventListener('click', async ()=>{
         showToast('Sin conexión: reporte guardado localmente. Se sincronizará automáticamente.');
       }
       if (kmMarcadoSospechoso) showToast(t('toastKmSospechoso'));
+      // El km recién guardado pasa a ser la última lectura confiable
+      if (!kmMarcadoSospechoso && payload.header && payload.header.kilometraje) {
+        lastKmCache[payload.header.codigo_vehiculo] = {
+          data: { kilometraje: payload.header.kilometraje, fecha_hora: new Date().toISOString() },
+          at: Date.now()
+        };
+      }
     } catch (e) {
       console.warn('No se pudo guardar en Supabase:', e);
     }
@@ -1038,21 +1123,7 @@ if (btnImprimir) btnImprimir.addEventListener('click', ()=>{
 if (btnLimpiar) btnLimpiar.addEventListener('click', ()=>{
   if (!confirm(t('confirmLimpiar'))) return;
   try{ localStorage.removeItem(KEY); }catch(e){}
-  if (form) form.reset();
-  foto1Data = null; foto2Data = null;
-  if (prev1) prev1.classList.add('hidden'); if (prev2) prev2.classList.add('hidden');
-  if (fecha) fecha.value = nowLocal();
-  if (codSelect) codSelect.value = '';
-  if (cod) {
-    cod.disabled = false;
-    cod.value = '';
-    cod.classList.add('hidden');
-  }
-  updateLiveCode();
-  if (btnImprimir) {
-    btnImprimir.disabled = true;
-    btnImprimir.classList.remove('btn-highlight');
-  }
+  resetFormState();
   showToast(t('toastReiniciado'));
 });
 

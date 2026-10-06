@@ -318,6 +318,9 @@
     const res = await getMaintenanceAlerts();
     if (!res.ok || !res.data || !Object.keys(res.data).length) return false;
     window.applyMaintenanceAlerts(res.data);
+    try {
+      localStorage.setItem('RDV_GDR_MAINT_ALERTS', JSON.stringify({ map: res.data, updatedAt: res.updatedAt || null }));
+    } catch (e) { /* sin localStorage: no se guarda el respaldo */ }
     return true;
   }
 

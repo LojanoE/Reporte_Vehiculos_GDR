@@ -9,7 +9,8 @@
 
 ## Deployment
 - Hosted on **GitHub Pages**. `.nojekyll` at root disables Jekyll processing.
-- **Cache busting:** bump the `?v=...` query string in `index.html` and `dashboard.html` when editing `styles.css`, `app.js`, `supabase-client.js`, `offline-queue.js`, or `dashboard.js`.
+- **Cache busting:** bump the `?v=...` query string in the HTML pages (`index.html`, `dashboard.html`, `reporte-vehiculo.html`, `analisis-quincenal.html`, `solicitud-mantenimiento.html`) when editing `styles.css`, `app.js`, `constants.js`, `supabase-client.js`, `offline-queue.js`, or `dashboard.js`.
+- **`version.json`:** also bump `{"v":...}` in `version.json` and `APP_VERSION` in `app.js` (and the inline `V` in `dashboard.html`). On load and when the tab becomes visible, the app fetches `version.json` (`no-store`); if it differs it reloads once (guard `RDV_GDR_RELOADED_FOR`, draft kept via `RDV_GDR_AUTO_RELOAD`). This rescues phones that kept a stale cached `index.html`/JS.
 
 ## Architecture
 - **Entry / Form:** `index.html` (form UI + printable report layout + chatbot markup + language toggle)
@@ -29,7 +30,8 @@
   - Tables: `reports`, `report_systems`, `report_photos`.
   - Anonymous inserts allowed; no auth required.
 - **Drafts** auto-save to `localStorage` under key **`RDV_GDR_DRAFT`**.
-- On browser reload, drafts are **cleared intentionally** (see `loadDraft()` logic using `performance.navigation`).
+- On browser reload, drafts are **cleared intentionally** (see `loadDraft()` logic using `performance.navigation`). Drafts are also discarded when the report was already generated (`generado`) or older than 12 h (`_ts`, `DRAFT_MAX_AGE_MS`), so a new inspection never starts with the previous km. `resetFormState()` is the shared reset routine.
+- **Live data refresh:** `refreshLiveData()` in `app.js` re-fetches maintenance thresholds and clears `lastKmCache` (2 min TTL, failures not cached) on load, `online`, `visibilitychange` and bfcache `pageshow`. The last thresholds received are kept in `localStorage` under `RDV_GDR_MAINT_ALERTS` and applied by `constants.js` as the offline fallback (the hardcoded values are only the last resort).
 - **Offline queue:** when a report is generated, the app first tries to save to Supabase. If it fails (no connection), the full payload is queued in IndexedDB and synced automatically on `window.online`.
 - Successfully synced reports are removed from IndexedDB.
 - **Language preference** is saved to `localStorage` under key **`RDV_GDR_LANG`** (`es` or `zh`).

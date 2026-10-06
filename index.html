@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RDV—GDR</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -57,14 +58,14 @@
                 <option value="BZ-01">BZ-01</option>
                 <!-- <option value="OTRO">Otro...</option> -->
               </select>
-              <input id="cod" required maxlength="25" class="w-1/3 mt-0 bg-black/30 border border-white/15 rounded-lg px-3 py-2 hidden" placeholder="Código">
+              <input id="cod" autocomplete="off" required maxlength="25" class="w-1/3 mt-0 bg-black/30 border border-white/15 rounded-lg px-3 py-2 hidden" placeholder="Código">
             </div>
           </label>
           <label class="block text-sm"><span data-i18n="placaLabel">Placa</span> <span class="text-red-400">*</span>
             <input id="placa" required maxlength="20" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="ABC-1234">
           </label>
           <label class="block text-sm"><span data-i18n="kmLabel">Kilometraje actual</span> <span class="text-red-400">*</span>
-            <input id="km" type="number" min="0" step="1" required class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="123456">
+            <input id="km" type="number" autocomplete="off" min="0" step="1" required class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="123456">
             <div id="kmWarning" class="text-yellow-400 font-bold text-xs mt-1 hidden"></div>
           </label>
         </div>
@@ -254,9 +255,9 @@
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="constants.js?v=261002-01"></script>
-  <script src="supabase-client.js?v=261002-01"></script>
+  <script src="constants.js?v=261006-01"></script>
+  <script src="supabase-client.js?v=261006-01"></script>
   <script src="offline-queue.js?v=260810-02"></script>
-  <script src="app.js?v=260928-01"></script>
+  <script src="app.js?v=261006-01"></script>
 </body>
 </html>
