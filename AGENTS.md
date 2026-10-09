@@ -112,7 +112,7 @@
 - Tables (`migration_maintenance_requests.sql`): `maintenance_requests` (código `SM-YYMM-<ECO>-NN`, correlativo mensual por vehículo; `estado` PENDIENTE/EN_REPARACION/CERRADA; `fallas` jsonb) and `request_signers` (firmantes por rol, baja lógica `activo=false`).
 - `supabase-client.js`: `getRequestSignersFromSupabase`, `saveRequestSignersToSupabase`, `getNextRequestCode`, `saveMaintenanceRequestToSupabase`, `getMaintenanceRequestsFromSupabase`, `updateMaintenanceRequestStatusInSupabase`.
 - `constants.js`: `VEHICLE_BRAND_MAP`, `REQUEST_*` defaults and `REQUEST_SIGNERS_DEFAULT` (offline fallback). Firmas are editable per request; the list is managed from "Gestionar firmantes".
-- The photo stays local (printed only). Hoja 2 and the G.E. block are printed pre-filled where known, rest blank for handwriting. No offline queue: if saving fails the form still prints.
+- Las **2 fotos** (lado a lado, como en el Excel oficial) se quedan locales (solo impresas). Hasta **7 filas** de fallas. El documento imprimible (`#solicitud-print`) es una maqueta calcada del Excel ECSA (tablas de 9 columnas, alturas escaladas con `--s`/`--h`, `logo-ecsa.png`). `@page{margin:0}` + padding interno evita los encabezados/pies del navegador; el botón "Descargar PDF" usa `html2pdf.js` (cdnjs) y el título del documento pasa a ser el código `SM-…` al imprimir.
 
 ## Existing Docs
 - `GEMINI.md` contains a longer project description. Treat it as background, not source of truth; executable behavior lives in `app.js`, `dashboard.js`, `supabase-client.js`, `offline-queue.js`, and `styles.css`.

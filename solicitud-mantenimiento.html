@@ -29,34 +29,37 @@
     .modal { background: #1e293b; border: 1px solid rgba(255,255,255,.15); border-radius: .75rem; padding: 1rem; width: 100%; max-width: 56rem; max-height: 90vh; overflow-y: auto; }
     .foto-thumb { max-height: 140px; border-radius: .5rem; border: 1px solid rgba(255,255,255,.15); }
 
-    /* ===== Documento imprimible (oculto en pantalla) ===== */
+    /* ===== Documento imprimible (oculto en pantalla) — réplica del Excel ECSA ===== */
     #solicitud-print { display: none; }
-    .pd { font-family: Arial, Helvetica, sans-serif; color: #000; font-size: 8.5pt; background: #fff; }
-    .pd-page { width: 100%; }
-    .pd-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-    .pd-head img { height: 14mm; width: auto; }
-    .pd-title { flex: 1; text-align: center; font-weight: 700; font-size: 12pt; line-height: 1.25; }
-    .pd-code { text-align: right; font-size: 8pt; margin-bottom: 3px; }
-    .pd-t { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .pd-t th, .pd-t td { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; color: #000; text-align: left; font-size: 8.5pt; word-wrap: break-word; }
-    .pd-t .band { background: #e5e7eb; text-align: center; font-weight: 700; }
-    .pd-t .lbl { background: #f3f4f6; font-weight: 600; font-size: 8pt; }
-    .pd-t .c { text-align: center; }
-    .pd-t .sig { height: 10mm; vertical-align: bottom; }
-    .pd-t .r-falla td { height: 7mm; }
-    .pd-t .foto { height: 34mm; text-align: center; vertical-align: middle; }
-    .pd-t .foto img { max-height: 32mm; max-width: 100%; }
-    .pd-t .big { height: 38mm; vertical-align: top; white-space: pre-wrap; }
-    .pd-t .mid { height: 22mm; vertical-align: top; }
-    .pd-notes { font-size: 6.8pt; line-height: 1.25; margin-top: 4px; }
-    .pd-notes p { margin: 0 0 2px; }
+    .pd { font-family: Calibri, Carlito, Arial, Helvetica, sans-serif; color: #000; background: #fff; }
+    .pd-page { width: 210mm; height: 296mm; box-sizing: border-box; padding: 14mm 20.5mm 0; overflow: hidden; --s: .72; --fs: 11; }
+    .pd-page.s2 { --s: .71; --fs: 14; padding-top: 18mm; }
     .pd-break { page-break-before: always; break-before: page; }
-    .pd-chk { display: inline-block; width: 31%; font-size: 8pt; padding: 2px 0; }
+    .pd-code { text-align: right; font-size: 7pt; margin-bottom: 1mm; }
+    .pd-t { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .pd-t td { border: 1px solid #000; padding: 0 3px; text-align: center; vertical-align: middle; overflow: hidden;
+      font-size: calc(var(--fs) * var(--s) * 1pt); line-height: 1.15; color: #000;
+      height: calc(var(--h) * var(--s) * 1pt); word-wrap: break-word; }
+    .pd-t td.l { text-align: left; }
+    .pd-t td.b { font-weight: 700; }
+    .pd-t td.g { background: #f2f2f2; }
+    .pd-t td.f9 { font-size: calc(9 * var(--s) * 1pt); }
+    .pd-t td.tp { vertical-align: top; }
+    .pd-t td.ttl { position: relative; font-size: calc(14 * var(--s) * 1pt); font-weight: 700; }
+    .pd-t td.ttl img { position: absolute; left: 1mm; top: 50%; transform: translateY(-50%); width: 12mm; height: 10mm; object-fit: contain; }
+    .pd-t td.foto { padding: 0; }
+    .pd-t td.foto img { display: block; width: 100%; height: calc(162 * var(--s) * 1pt - 2px); object-fit: contain; }
+    .pd-t td.pre { white-space: pre-wrap; }
+    .pd-t .sub { display: block; font-size: calc(9 * var(--s) * 1pt); font-weight: 700; }
+    .pd-t td.notes { text-align: left; vertical-align: top; padding: 2px 4px; }
+    .pd-t td.notes p { margin: 0 0 4px; }
+    .pd-t td.notes .ap { margin-top: 16px; display: flex; gap: 34pt; }
+    .pd-h2 { text-align: center; font-weight: 700; font-size: calc(16 * .71 * 1pt); line-height: 1.2; margin-bottom: 2mm; }
 
     @media print {
-      @page { size: A4; margin: 10mm; }
+      @page { size: A4; margin: 0; }
       :root { color-scheme: light; }
-      html, body { background: #fff !important; color: #000 !important; }
+      html, body { background: #fff !important; color: #000 !important; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #solicitud-print { display: block !important; }
       * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -117,16 +120,29 @@
       </div>
       <div class="flex items-center gap-3">
         <button type="button" id="btn-add-falla" class="btn btn-ghost btn-sm">+ Agregar falla</button>
-        <span class="text-xs text-slate-500">Máximo 6 filas para que entren en la hoja.</span>
+        <span class="text-xs text-slate-500">Máximo 7 filas para que entren en la hoja.</span>
       </div>
       <datalist id="dl-sistemas"></datalist>
 
-      <label>Fotografía (opcional, solo se imprime; no se sube a la nube)
-        <input type="file" id="f-foto" accept="image/*">
-      </label>
-      <div id="foto-wrap" class="hidden flex items-center gap-3">
-        <img id="foto-prev" class="foto-thumb" alt="Vista previa">
-        <button type="button" id="btn-quitar-foto" class="btn btn-ghost btn-sm">Quitar foto</button>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label>Fotografía 1 (opcional, solo se imprime; no se sube a la nube)
+            <input type="file" id="f-foto1" accept="image/*">
+          </label>
+          <div id="foto-wrap1" class="hidden flex items-center gap-3 mt-2">
+            <img id="foto-prev1" class="foto-thumb" alt="Vista previa 1">
+            <button type="button" id="btn-quitar-foto1" class="btn btn-ghost btn-sm">Quitar foto</button>
+          </div>
+        </div>
+        <div>
+          <label>Fotografía 2 (opcional)
+            <input type="file" id="f-foto2" accept="image/*">
+          </label>
+          <div id="foto-wrap2" class="hidden flex items-center gap-3 mt-2">
+            <img id="foto-prev2" class="foto-thumb" alt="Vista previa 2">
+            <button type="button" id="btn-quitar-foto2" class="btn btn-ghost btn-sm">Quitar foto</button>
+          </div>
+        </div>
       </div>
 
       <div class="flex items-center justify-between">
@@ -161,6 +177,7 @@
 
       <div class="flex flex-wrap items-center gap-3 pt-2">
         <button type="button" id="btn-save-print" class="btn btn-primary">💾 Guardar e imprimir</button>
+        <button type="button" id="btn-pdf" class="btn btn-ghost">📄 Descargar PDF</button>
         <button type="button" id="btn-print" class="btn btn-ghost">🖨️ Solo imprimir</button>
         <button type="button" id="btn-clear" class="btn btn-ghost">Limpiar</button>
         <span id="status-msg" class="text-sm"></span>
@@ -198,134 +215,62 @@
     </div>
   </div>
 
-  <!-- ===== DOCUMENTO IMPRIMIBLE: hoja 1 + hoja 2 ===== -->
+  <!-- ===== DOCUMENTO IMPRIMIBLE: réplica del Excel ECSA (hoja 1 + hoja 2) ===== -->
   <div id="solicitud-print" class="pd">
 
     <!-- Hoja 1: solicitud -->
     <section class="pd-page">
-      <div class="pd-head">
-        <img src="LOGO GDR.jpeg" alt="GDR">
-        <div class="pd-title">Formulario de solicitud de mantenimiento equipo ECSA<br>ECSA设备维修申请单</div>
-        <img src="ECUACORRIENTE.png" alt="Ecuacorriente">
-      </div>
-      <div class="pd-code">N.º de solicitud 编号: <b data-p="cod"></b></div>
-
+      <div class="pd-code">N.º <b data-p="cod"></b></div>
       <table class="pd-t">
-        <colgroup><col><col><col><col><col><col><col><col></colgroup>
-        <tr><th colspan="8" class="band">Entidad de solicitación de reparación de equipos 设备申请报修单位</th></tr>
-        <tr><td colspan="3" class="lbl">Fecha de solicitud (dd/mm/aaaa)<br>申请日期</td><td colspan="5" data-p="fecha"></td></tr>
-        <tr><td colspan="3" class="lbl">Dept. del equipo<br>设备所属部门</td><td colspan="5" data-p="dept"></td></tr>
-        <tr>
-          <td colspan="3" class="lbl">Código/Nombre/Serie de equipo (placa)<br>设备编号/名称/设备序列号（车牌）</td>
-          <td colspan="2" class="c"><b data-p="eco"></b></td>
-          <td class="c" data-p="marca"></td>
-          <td colspan="2" class="c" data-p="placa"></td>
-        </tr>
-        <tr><td colspan="3" class="lbl">Kilometraje actual o tiempo de funcionamiento<br>当前里程或运行时间</td><td colspan="5" data-p="km"></td></tr>
-        <tr>
-          <td colspan="3" class="lbl sig">Responsable de dept. del solicitante (firma)<br>设备报修单位负责人（签字）</td>
-          <td colspan="5" class="sig" data-p="responsable_dept"></td>
-        </tr>
-        <tr>
-          <td colspan="3" class="lbl sig">Solicitante de reparación (firma)<br>设备报修人（签字）</td>
-          <td colspan="5" class="sig" data-p="solicitante"></td>
-        </tr>
-        <tr>
-          <th class="c">序号<br>N.º</th>
-          <th colspan="2" class="c">Causa del fracaso<br>故障原因</th>
-          <th colspan="3" class="c">Detalle de reparación<br>维修细节</th>
-          <th colspan="2" class="c">OBSERVACIONES<br>注释</th>
-        </tr>
+        <colgroup><col style="width:7.74%"><col style="width:7.74%"><col style="width:7.74%"><col style="width:11.31%"><col style="width:7.74%"><col style="width:7.74%"><col style="width:7.74%"><col style="width:12.59%"><col style="width:29.68%"></colgroup>
+        <tr style="--h:39"><td colspan="9" class="ttl"><img src="logo-ecsa.png" alt="">Formulario de solicitud de mantenimiento equipo ECSA<br>ECSA设备维修申请单</td></tr>
+        <tr style="--h:17.25"><td colspan="9" class="b g">Entidad de solicitación de reparación de equipos设备申请报修单位</td></tr>
+        <tr style="--h:29.4"><td colspan="4" class="l">Fecha de solicitud(dd/mm/aaaa)<br>申请日期</td><td colspan="5" data-p="fecha"></td></tr>
+        <tr style="--h:25.95"><td colspan="4" class="l">Dept. del equipo<br>设备所属部门</td><td colspan="5" data-p="dept"></td></tr>
+        <tr style="--h:33.6"><td colspan="4" class="l">Codico/Nombre/Serie de equipo（placa）<br>设备编号/名称/设备序列号（车牌）</td><td colspan="2" data-p="eco"></td><td colspan="2" data-p="marca"></td><td data-p="placa"></td></tr>
+        <tr style="--h:27"><td colspan="4" class="l">Kilometraje actual o tiempo de funcionamiento<br>当前里程或运行时间</td><td colspan="5" data-p="km"></td></tr>
+        <tr style="--h:39"><td colspan="4" class="l">Responsable de dept. del solicitud (firma)<br>设备报修单位负责人（签字）</td><td colspan="2" data-p="responsable_dept"></td><td colspan="2" class="l">Solicitante de reparación（firma)<br>设备报修人（签字）</td><td data-p="solicitante"></td></tr>
+        <tr style="--h:15.75"><td colspan="9"></td></tr>
+        <tr style="--h:35.4" class="b"><td class="b">序号</td><td colspan="5" class="b">Causa del fracaso 故障原因</td><td colspan="2" class="b">Detalle de reparación <br>维修细节</td><td class="b">OBSERVACIONES<br>注释</td></tr>
         <tbody id="p-fallas"></tbody>
-        <tr><td colspan="8" class="foto" id="p-foto"><span style="color:#888;font-size:8pt;">Fotografía 照片</span></td></tr>
-
-        <tr><th colspan="8" class="band">Dpto. de G.E. 设备管理部</th></tr>
-        <tr><td colspan="3" class="lbl">Tipo de reparación recomendada<br>建议维修类型</td><td colspan="5" data-p="tipo"></td></tr>
-        <tr><td colspan="3" class="lbl">Taller de reparaciones sugerido<br>建议维修车间</td><td colspan="5" data-p="taller"></td></tr>
-        <tr>
-          <td colspan="3" class="lbl sig">Inspector del equipo (firmado)<br>设备检查人（签字）</td>
-          <td colspan="5" class="sig" data-p="inspector_ge"></td>
-        </tr>
-        <tr>
-          <td colspan="3" class="lbl sig">Responsable del departamento de mantenimiento (firma)<br>维修部门负责人（签字）</td>
-          <td colspan="5" class="sig" data-p="responsable_mtto"></td>
-        </tr>
-        <tr>
-          <td colspan="3" class="lbl sig">Aprobado por (firmado)<br>审批人（签字）</td>
-          <td colspan="5" class="sig" data-p="aprobador"></td>
-        </tr>
+        <tr style="--h:162"><td colspan="6" class="foto" id="p-foto1"></td><td colspan="3" class="foto" id="p-foto2"></td></tr>
+        <tr style="--h:18"><td colspan="9" class="b g">Dpto. de G.E.设备管理部</td></tr>
+        <tr style="--h:30.75"><td colspan="4" class="l">Tipo de reparación recomendada<br>建议维修类型 </td><td colspan="5" data-p="tipo"></td></tr>
+        <tr style="--h:28.5"><td colspan="4" class="l">Taller de reparaciones sugerido<br>建议维修车间</td><td colspan="5" data-p="taller"></td></tr>
+        <tr style="--h:29.25"><td colspan="4" class="l">Inspector del equipo.（firmado)<br>设备检查人（签字）</td><td colspan="5" data-p="inspector_ge"></td></tr>
+        <tr style="--h:37.95"><td colspan="4" class="l">维修部门负责人（签字 ）：<br>Responsable del departamento de mantenimiento (firma)：</td><td colspan="5" data-p="responsable_mtto"></td></tr>
+        <tr style="--h:245.25"><td colspan="9" class="notes">
+          <p>注Notas:</p>
+          <p>1. 设备管理部相关专业人员对设备使用单位报修情况进行检查，指定设备维修方式或维修类型，签字确认后，方可进行维修。</p>
+          <p>1. Los profesionales pertinentes del departamento de gestión de equipos inspeccionarán el estado de reparación de los usuarios de los equipos. Después de especificar el método de mantenimiento del equipo o el tipo de mantenimiento y firmar para confirmar, se puede realizar el mantenimiento.</p>
+          <p>2. 设备所属部门在设备损坏后，经公司相关维修部门指定人员认定，无法在公司范围内修复，由维修部门负责人签字确认后，设备管理部安排外委维修。</p>
+          <p>2. Después de que el equipo es dañado por el departamento al que pertenece, el personal designado del departamento de mantenimiento correspondiente de la empresa determina que no puede repararse dentro de la empresa después de la firma y confirmación del responsable del departamento de mantenimiento. El departamento de gestión de equipos subcontratará el mantenimiento.</p>
+          <div class="ap"><span>Aprobado por（firmado)<br>审批人（签字）</span><span data-p="aprobador" style="align-self:flex-end;"></span></div>
+        </td></tr>
       </table>
-
-      <div class="pd-notes">
-        <p>注Notas:</p>
-        <p>1. 设备管理部相关专业人员对设备使用单位报修情况进行检查，指定设备维修方式或维修类型，签字确认后，方可进行维修。<br>
-        1. Los profesionales pertinentes del departamento de gestión de equipos inspeccionarán el estado de reparación de los usuarios de los equipos. Después de especificar el método de mantenimiento del equipo o el tipo de mantenimiento y firmar para confirmar, se puede realizar el mantenimiento.</p>
-        <p>2. 设备所属部门在设备损坏后，经公司相关维修部门指定人员认定，无法在公司范围内修复，由维修部门负责人签字确认后，设备管理部安排外委维修。<br>
-        2. Después de que el equipo es dañado por el departamento al que pertenece, el personal designado del departamento de mantenimiento correspondiente de la empresa determina que no puede repararse dentro de la empresa después de la firma y confirmación del responsable del departamento de mantenimiento. El departamento de gestión de equipos subcontratará el mantenimiento.</p>
-      </div>
     </section>
 
     <!-- Hoja 2: registro de mantenimiento -->
-    <section class="pd-page pd-break">
-      <div class="pd-head">
-        <img src="LOGO GDR.jpeg" alt="GDR">
-        <div class="pd-title">设备维修记录<br>REGISTRO DE MANTENIMIENTO DEL EQUIPO</div>
-        <img src="ECUACORRIENTE.png" alt="Ecuacorriente">
-      </div>
-      <div class="pd-code">N.º de solicitud 编号: <b data-p="cod"></b></div>
-
+    <section class="pd-page s2 pd-break">
+      <div class="pd-code">N.º <b data-p="cod"></b></div>
+      <div class="pd-h2">设备维修记录<br>REGISTRO DE MANTENIMIENTO DEL EQUIPO</div>
       <table class="pd-t">
-        <colgroup><col><col><col><col><col><col><col><col></colgroup>
-        <tr>
-          <th colspan="2" class="c">设 备 名 称<br>Nombre del equipo</th>
-          <th colspan="2" class="c">规格型号<br>Modelo y especificaciones</th>
-          <th colspan="2" class="c">修复时间段<br>Periodo de reparación</th>
-          <th colspan="2" class="c">维修人员/厂家<br>Proveedor de reparación</th>
-        </tr>
-        <tr>
-          <td colspan="2" class="c sig" data-p="equipo"></td>
-          <td colspan="2" class="c sig" data-p="modelo"></td>
-          <td colspan="2" class="sig"></td>
-          <td colspan="2" class="sig"></td>
-        </tr>
-        <tr>
-          <td colspan="2" class="lbl mid">设备故障引起原因<br>Causas de los fallos del equipo</td>
-          <td colspan="6" class="mid">
-            <span class="pd-chk">☐ 机件磨损 Desgaste</span>
-            <span class="pd-chk">☐ 非法操作 Manejo incorrecto</span>
-            <span class="pd-chk">☐ 人为损坏 Daños humanos</span>
-            <span class="pd-chk">☐ 超电压 Sobretensión</span>
-            <span class="pd-chk" style="width:62%;">☐ 保养维修故障 Fallo durante el mantenimiento y/o reparación</span>
-            <span class="pd-chk" style="width:96%;">☐ 其它 Otros：______________________________________________</span>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" class="lbl big">故障原因描述<br>Descripción de la causa de fallo</td>
-          <td colspan="6" class="big" data-p="desc_falla"></td>
-        </tr>
-        <tr>
-          <td colspan="2" class="lbl big">维修措施方法<br>Medidas de reparación</td>
-          <td colspan="6" class="big"></td>
-        </tr>
-        <tr>
-          <td colspan="2" class="lbl mid">维修检收情况<br>Aceptación del equipo reparado</td>
-          <td colspan="2" class="mid"></td>
-          <td colspan="2" class="lbl mid">其它问题<br>Otros problemas</td>
-          <td colspan="2" class="mid"></td>
-        </tr>
-        <tr>
-          <td colspan="2" class="lbl sig">填表人<br>Rellenado por：</td>
-          <td colspan="2" class="sig"></td>
-          <td colspan="2" class="lbl sig">填表时间<br>Fecha：</td>
-          <td colspan="2" class="sig"></td>
-        </tr>
+        <colgroup><col style="width:7.62%"><col style="width:7.62%"><col style="width:16.49%"><col style="width:7.62%"><col style="width:7.62%"><col style="width:7.62%"><col style="width:7.62%"><col style="width:17.34%"><col style="width:20.45%"></colgroup>
+        <tr style="--h:54"><td colspan="2">设 备 名 称 <br>Nombre del equipo<span class="sub" data-p="equipo"></span></td><td>规格型号<br>Modelo y especificaciones<span class="sub" data-p="modelo"></span></td><td colspan="4">修复时间段<br> Periodo de reparación</td><td>维修人员/厂家<br>Proveedor de reparación</td><td></td></tr>
+        <tr style="--h:55.35"><td colspan="2" rowspan="3">设备故障引起原因<br>Causas de los fallos del equipo</td><td colspan="2">机件磨损Desgaste </td><td colspan="3">非法操作Manejo incorrecto </td><td colspan="2">人为损坏Daños humanos </td></tr>
+        <tr style="--h:46.8"><td colspan="2">超电压 Sobretensión</td><td colspan="5">保养维修故障<br>Fallo durante el mantenimiento y/o reparación</td></tr>
+        <tr style="--h:39"><td colspan="7" class="l">其它Otros：</td></tr>
+        <tr style="--h:130.2"><td colspan="2">故障 原因描述 Descripción de la causa de fallo</td><td colspan="3" class="l tp pre f9" data-p="desc_falla"></td><td colspan="2">维修<br>措施<br>方法 Medidas de reparación</td><td colspan="2"></td></tr>
+        <tr style="--h:118.2"><td colspan="2">维修检收情况 Aceptación del equipo reparado</td><td colspan="3"></td><td colspan="2">其它问题Otros problemas</td><td colspan="2"></td></tr>
+        <tr style="--h:39"><td colspan="3" class="l">填表人Rellenado por：</td><td colspan="2"></td><td colspan="2">填表时间<br>Fecha：</td><td colspan="2"></td></tr>
       </table>
     </section>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="constants.js?v=261006-01"></script>
   <script src="supabase-client.js?v=261006-01"></script>
-  <script src="solicitud-mantenimiento.js?v=261002-02"></script>
+  <script src="solicitud-mantenimiento.js?v=261009-01"></script>
 </body>
 </html>

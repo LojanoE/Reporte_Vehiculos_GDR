@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const MAX_FALLAS = 6;
+  const MAX_FALLAS = 7;
   const ROLES = Object.keys(window.REQUEST_ROLES);
   const SISTEMAS = [
     'Motor', 'Sistema de Transmisión', 'Dirección', 'Frenos', 'Suspensión', 'Elevavidrios',
@@ -19,7 +19,7 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   let signers = JSON.parse(JSON.stringify(window.REQUEST_SIGNERS_DEFAULT));
-  let fotoData = null;
+  let fotos = [null, null];
   let editingCode = null; // código de una solicitud cargada desde el historial
 
   function localISO(d) {
@@ -143,9 +143,16 @@
       reader.readAsDataURL(file);
     });
   }
-  function showFoto() {
-    $('foto-wrap').classList.toggle('hidden', !fotoData);
-    if (fotoData) $('foto-prev').src = fotoData;
+  function showFoto(i) {
+    if (i == null) { showFoto(1); showFoto(2); return; }
+    const d = fotos[i - 1];
+    $('foto-wrap' + i).classList.toggle('hidden', !d);
+    if (d) $('foto-prev' + i).src = d;
+  }
+  function clearFotos() {
+    fotos = [null, null];
+    $('f-foto1').value = ''; $('f-foto2').value = '';
+    showFoto();
   }
 
   /* ---------- Vehículo ---------- */
@@ -195,9 +202,9 @@
     $('f-taller').value = r.taller_sugerido || '';
     ROLES.forEach(rol => { $('f-' + rol).value = r[rol] || ''; });
     setFallas(r.fallas);
-    fotoData = null; showFoto();
+    clearFotos();
     const b = $('edit-banner');
-    b.textContent = `Editando la solicitud ${r.cod_solicitud}. Al guardar se actualizará (la foto no se guarda en la nube).`;
+    b.textContent = `Editando la solicitud ${r.cod_solicitud}. Al guardar se actualizará (las fotos no se guardan en la nube).`;
     b.classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -214,7 +221,7 @@
     ROLES.forEach(r => { $('f-' + r).value = ''; });
     applyDefaultSigners();
     setFallas([]);
-    fotoData = null; $('f-foto').value = ''; showFoto();
+    clearFotos();
     setStatus('');
   }
   function validate(row) {
@@ -248,20 +255,50 @@
     for (let i = 0; i < rows; i++) {
       const f = row.fallas[i] || {};
       const tr = document.createElement('tr');
-      tr.className = 'r-falla';
-      tr.innerHTML = `<td class="c">${f.causa || f.detalle || f.observacion ? i + 1 : ''}</td>
-        <td colspan="2">${esc(f.causa)}</td><td colspan="3">${esc(f.detalle)}</td><td colspan="2">${esc(f.observacion)}</td>`;
+      tr.style.setProperty('--h', '27');
+      tr.innerHTML = `<td class="b f9">${f.causa || f.detalle || f.observacion ? i + 1 : ''}</td>
+        <td colspan="5" class="b f9">${esc(f.causa)}</td><td colspan="2" class="f9">${esc(f.detalle)}</td><td class="f9">${esc(f.observacion)}</td>`;
       body.appendChild(tr);
     }
-    $('p-foto').innerHTML = fotoData
-      ? `<img src="${fotoData}" alt="Foto">`
-      : '<span style="color:#888;font-size:8pt;">Fotografía 照片</span>';
+    [1, 2].forEach(n => {
+      $('p-foto' + n).innerHTML = fotos[n - 1] ? `<img src="${fotos[n - 1]}" alt="Foto ${n}">` : '';
+    });
   }
-  function printDoc() {
-    // Esperar a que las imágenes (logos y foto) estén listas antes de imprimir
+  function imagesReady() {
     const imgs = [...document.querySelectorAll('#solicitud-print img')];
-    Promise.all(imgs.map(i => i.complete ? null : new Promise(r => { i.onload = i.onerror = r; })))
-      .then(() => window.print());
+    return Promise.all(imgs.map(i => i.complete ? null : new Promise(r => { i.onload = i.onerror = r; })));
+  }
+  function printDoc(cod) {
+    // Esperar a que las imágenes (logo y fotos) estén listas antes de imprimir.
+    // El título del documento (nombre sugerido del PDF) pasa a ser el código de la solicitud.
+    const oldTitle = document.title;
+    const restore = () => { document.title = oldTitle; window.removeEventListener('afterprint', restore); };
+    window.addEventListener('afterprint', restore);
+    document.title = String(cod || 'Solicitud de mantenimiento').replace(/[()]/g, '');
+    imagesReady().then(() => window.print());
+  }
+  async function downloadPdf(cod) {
+    if (typeof window.html2pdf !== 'function') return setStatus('No se pudo cargar el generador de PDF (¿sin conexión?). Usa "Solo imprimir".', '#f87171');
+    const el = $('solicitud-print');
+    setStatus('Generando PDF…');
+    await imagesReady();
+    const prev = el.getAttribute('style');
+    el.style.cssText = 'display:block;position:absolute;left:0;top:0;width:210mm;z-index:-1;';
+    try {
+      await window.html2pdf().set({
+        margin: 0,
+        filename: String(cod).replace(/[()]/g, '') + '.pdf',
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fff', scrollX: 0, scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css'] }
+      }).from(el).save();
+      setStatus('PDF generado.', '#34d399');
+    } catch (_) {
+      setStatus('No se pudo generar el PDF. Usa "Solo imprimir".', '#f87171');
+    } finally {
+      if (prev == null) el.removeAttribute('style'); else el.setAttribute('style', prev);
+    }
   }
 
   /* ---------- Acciones ---------- */
@@ -270,7 +307,21 @@
     const err = validate(row);
     if (err) return setStatus(err, '#f87171');
     fillPrint(row, editingCode || '(sin guardar)');
-    printDoc();
+    printDoc(editingCode);
+  }
+  async function pdfOnly() {
+    const row = collect();
+    const err = validate(row);
+    if (err) return setStatus(err, '#f87171');
+    const btn = $('btn-pdf');
+    btn.disabled = true;
+    try {
+      const cod = editingCode || '(sin guardar)';
+      fillPrint(row, cod);
+      await downloadPdf(editingCode || 'Solicitud-mantenimiento-' + row.codigo_vehiculo);
+    } finally {
+      btn.disabled = false;
+    }
   }
   async function saveAndPrint() {
     const row = collect();
@@ -290,7 +341,7 @@
         setStatus('No se pudo guardar en la nube (¿sin conexión?). Se imprime igualmente.', '#fbbf24');
       }
       fillPrint(row, res.ok ? cod : '(sin guardar)');
-      printDoc();
+      printDoc(res.ok ? cod : null);
     } finally {
       btn.disabled = false;
     }
@@ -350,13 +401,16 @@
 
     $('f-eco').addEventListener('change', onEcoChange);
     $('btn-add-falla').addEventListener('click', () => addFalla());
-    $('f-foto').addEventListener('change', async e => {
-      const f = e.target.files[0];
-      if (!f) return;
-      try { fotoData = await resizeImage(f); showFoto(); }
-      catch (_) { setStatus('No se pudo leer la imagen.', '#f87171'); }
+    [1, 2].forEach(n => {
+      $('f-foto' + n).addEventListener('change', async e => {
+        const f = e.target.files[0];
+        if (!f) return;
+        try { fotos[n - 1] = await resizeImage(f); showFoto(n); }
+        catch (_) { setStatus('No se pudo leer la imagen.', '#f87171'); }
+      });
+      $('btn-quitar-foto' + n).addEventListener('click', () => { fotos[n - 1] = null; $('f-foto' + n).value = ''; showFoto(n); });
     });
-    $('btn-quitar-foto').addEventListener('click', () => { fotoData = null; $('f-foto').value = ''; showFoto(); });
+    $('btn-pdf').addEventListener('click', pdfOnly);
     $('btn-save-print').addEventListener('click', saveAndPrint);
     $('btn-print').addEventListener('click', printOnly);
     $('btn-clear').addEventListener('click', resetForm);
