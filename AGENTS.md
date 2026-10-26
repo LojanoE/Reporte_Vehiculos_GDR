@@ -116,3 +116,10 @@
 
 ## Existing Docs
 - `GEMINI.md` contains a longer project description. Treat it as background, not source of truth; executable behavior lives in `app.js`, `dashboard.js`, `supabase-client.js`, `offline-queue.js`, and `styles.css`.
+
+## Formato de inspección SE-PR-009-FOR-02 V03
+- El RDV sigue el formato de la empresa: secciones A, B, GRUA, C, D, E, F, G (+ **H – Mecánica GDR**, extra propia). Fuente única: `INSPECTION_SECTIONS` en `constants.js` (ítems `{es, zh, aplica?}`); `nombre_es` debe ser único en todo el formato (upsert por `report_id,nombre_es`).
+- **7 códigos** (`INSPECTION_CODES`): OK, CO, FA, VE, RE, LI, CA. Se guardan en `report_systems.codigo` y `seccion`; `estado` se mapea con `INSPECTION_CODE_TO_ESTADO` (CO/VE/LI→OBS; FA/RE/CA→CRI) para que dashboard y reportes no cambien. Observación obligatoria si el código ≠ OK.
+- **Catálogos** `vehicles` y `drivers` (`migration_inspeccion_v03.sql`, RLS select/insert/update, baja lógica). `window.CATALOG` + `refreshCatalogs()`; caché `RDV_GDR_CATALOG`; fallback `VEHICLES_DEFAULT`/`DRIVERS_DEFAULT`. Autocompleta placa, año, tonelaje, vigencias, cédula y licencia, con avisos no bloqueantes (≤30 días). Grúa/pértiga se ocultan según `vehicles.tipo`/`aplica_pertiga`.
+- `reports` guarda copia del encabezado (cedula, licencia, anio, tonelaje, vigencias, `formato_version`). `saveReport()` reintenta sin columnas nuevas si la migración no está aplicada.
+- Impresión: `#report` calca el Excel (A4, siempre en español). Aprueba/No aprueba sale de `estado_operativo`.

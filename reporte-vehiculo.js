@@ -207,7 +207,7 @@
         ? fails.map(s => {
             const cls = s.estado === 'CRI' ? 'badge-danger' : 'badge-warn';
             const obs = s.observacion ? ` — ${esc(s.observacion)}` : '';
-            return `<div class="fail-item"><span class="badge ${cls}">${STATUS_LABEL[s.estado]}</span> <strong>${esc(s.nombre_es)}</strong>${obs}</div>`;
+            return `<div class="fail-item"><span class="badge ${cls}">${STATUS_LABEL[s.estado]}${s.codigo ? ' · ' + esc(s.codigo) : ''}</span> <strong>${esc(s.nombre_es)}</strong>${obs}</div>`;
           }).join('')
         : '<span class="text-slate-400">Sin fallas</span>';
 
@@ -270,7 +270,7 @@
           detalle.push([
             r.cod_reporte, fmtDate(r.fecha_hora), r.conductor || '', r.inspector || '',
             r.kilometraje ?? '', r.estado_operativo || '', s.nombre_es,
-            STATUS_LABEL[s.estado] || s.estado, s.observacion || '',
+            (STATUS_LABEL[s.estado] || s.estado) + (s.codigo ? ` (${s.codigo})` : ''), s.observacion || '',
             r.obs_general || ''
           ]);
         });

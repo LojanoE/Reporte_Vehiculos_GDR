@@ -89,6 +89,154 @@
     aprobador: ['Wang Hongliang/Dai Jianggen']
   };
 
+  // ====== Formato de inspección SE-PR-009-FOR-02 V03 ======
+  window.INSPECTION_FORMAT = { codigo: 'SE-PR-009-FOR-02', version: '03' };
+
+  // Códigos del formato → estado agregado que usan dashboard y reportes.
+  window.INSPECTION_CODES = [
+    { v: 'OK', es: 'Bien', zh: '正常', estado: 'OK' },
+    { v: 'CO', es: 'Corregir', zh: '纠正', estado: 'OBS' },
+    { v: 'VE', es: 'Verificar', zh: '核查', estado: 'OBS' },
+    { v: 'LI', es: 'Limpiar', zh: '清洁', estado: 'OBS' },
+    { v: 'FA', es: 'Con falla', zh: '故障', estado: 'CRI' },
+    { v: 'RE', es: 'Reparar', zh: '维修', estado: 'CRI' },
+    { v: 'CA', es: 'Cambiar', zh: '更换', estado: 'CRI' }
+  ];
+  window.INSPECTION_CODE_TO_ESTADO = {};
+  window.INSPECTION_CODES.forEach(c => { window.INSPECTION_CODE_TO_ESTADO[c.v] = c.estado; });
+
+  // Fuente única de los ítems. `es` es el nombre que se guarda (nombre_es) y debe
+  // ser único en todo el formato. aplica: 'GRUA' (solo camión grúa) o 'PERTIGA'
+  // (solo vehículos con pértiga). La sección H no es del formato: conserva los
+  // sistemas mecánicos del RDV anterior para no perder el histórico.
+  window.INSPECTION_SECTIONS = [
+    { id: 'A', es: 'A - Sistema eléctrico', zh: 'A - 电气系统', items: [
+      { es: 'Faros delanteros', zh: '前大灯' },
+      { es: 'Luces delanteras', zh: '前灯' },
+      { es: 'Luces direccionales delanteras', zh: '前转向灯' },
+      { es: 'Luces traseras', zh: '尾灯' },
+      { es: 'Luces direccionales traseras', zh: '后转向灯' },
+      { es: 'Luces de freno', zh: '刹车灯' },
+      { es: 'Luces de retro (reversa)', zh: '倒车灯' },
+      { es: 'Luces de parqueo', zh: '双闪灯' },
+      { es: 'Bocinas/alarma acústica de retroceso', zh: '喇叭/倒车警报' },
+      { es: 'Instrumental', zh: '仪表' },
+      { es: 'Limpiaparabrisas, motor de plumas', zh: '雨刮器及电机' },
+      { es: 'Desempañador', zh: '除雾器' },
+      { es: 'Calefacción', zh: '暖风' }
+    ] },
+    { id: 'B', es: 'B - Cabina / chapería / protección', zh: 'B - 驾驶室/车身/防护', items: [
+      { es: 'Panel de instrumentos', zh: '仪表盘' },
+      { es: 'Puertas y asientos', zh: '车门和座椅' },
+      { es: 'Manijas/trabas/alzavidrios', zh: '门把手/门锁/升降器' },
+      { es: 'Espejos retrovisores', zh: '后视镜' },
+      { es: 'Cinturones de seguridad', zh: '安全带' },
+      { es: 'Vidrio parabrisas (sin trizaduras ni polarizados)', zh: '挡风玻璃（无裂纹、无贴膜）' },
+      { es: 'Vidrio posterior', zh: '后挡玻璃' },
+      { es: 'Ventilador', zh: '风扇' },
+      { es: 'Parasoles', zh: '遮阳板' },
+      { es: 'Apoya cabezas', zh: '头枕' },
+      { es: 'Cable pasa corriente', zh: '搭电线' },
+      { es: 'Pértiga (tajo de mina/relavera/mirador norte)', zh: '安全旗杆（矿坑/尾矿库/北观景台）', aplica: 'PERTIGA' }
+    ] },
+    { id: 'GRUA', es: 'Otros (aplica para camión grúa)', zh: '其他（适用于吊车）', aplica: 'GRUA', items: [
+      { es: 'Brazo y estructura', zh: '吊臂和结构' },
+      { es: 'Ganchos', zh: '吊钩' },
+      { es: 'Poleas', zh: '滑轮' },
+      { es: 'Cable', zh: '钢丝绳' },
+      { es: 'Estabilizador', zh: '支腿' }
+    ] },
+    { id: 'C', es: 'C - Frenos', zh: 'C - 制动', items: [
+      { es: 'Frenos: funcionamiento', zh: '制动：功能' },
+      { es: 'Frenos: efectividad', zh: '制动：效能' },
+      { es: 'Freno de seguridad (mano)', zh: '手刹' }
+    ] },
+    { id: 'D', es: 'D - Neumáticos', zh: 'D - 轮胎', items: [
+      { es: 'Neumáticos: labrado', zh: '轮胎：花纹' },
+      { es: 'Neumáticos: sin cortes, ni rayaduras', zh: '轮胎：无割伤、无划痕' },
+      { es: 'Neumáticos: otros', zh: '轮胎：其他' }
+    ] },
+    { id: 'E', es: 'E - Sistema de combustible', zh: 'E - 燃油系统', items: [
+      { es: 'Estado de mangueras', zh: '软管状态' },
+      { es: 'Estanqueidad', zh: '密封性' },
+      { es: 'Emanaciones al habitáculo', zh: '驾驶室内异味/泄漏' },
+      { es: 'Estado de la tapa de combustible', zh: '油箱盖状态' }
+    ] },
+    { id: 'F', es: 'F - Dotación de equipo', zh: 'F - 设备配备', items: [
+      { es: 'Gata (tijera/hidráulico)', zh: '千斤顶（剪式/液压）' },
+      { es: 'Llave / tuerca P / ruedas', zh: '扳手/轮胎螺母' },
+      { es: 'Rueda de emergencia', zh: '备胎' },
+      { es: 'Conos de 70 cm (mín. 2; camión grúa 4)', zh: '70厘米锥形桶（至少2个；吊车4个）' },
+      { es: 'Tacos de poliuretano y/o madera según su peso', zh: '聚氨酯/木制楔块' },
+      { es: 'Extintor PQS (10 lib. camioneta - 20 lib. camión)', zh: '干粉灭火器（皮卡10磅/卡车20磅）' },
+      { es: 'Kit de contingencia para hidrocarburos', zh: '油品泄漏应急包' },
+      { es: 'Botiquín de primeros auxilios', zh: '急救箱' },
+      { es: 'Medidor de presión', zh: '气压表' },
+      { es: 'Linterna de mano', zh: '手电筒' },
+      { es: 'Sticker de identificación de la empresa', zh: '公司标识贴' }
+    ] },
+    { id: 'G', es: 'G - Dotación EPP conductor', zh: 'G - 驾驶员个人防护装备', items: [
+      { es: 'Ropa de trabajo con cinta reflectiva', zh: '带反光条工作服' },
+      { es: 'Zapatos de seguridad', zh: '安全鞋' },
+      { es: 'Gafas oscuras o blancas', zh: '护目镜（深色或透明）' },
+      { es: 'Guantes', zh: '手套' },
+      { es: 'Chaleco reflectivo naranja', zh: '橙色反光背心' },
+      { es: 'Casco amarillo', zh: '黄色安全帽' }
+    ] },
+    { id: 'H', es: 'H - Mecánica GDR (adicional)', zh: 'H - GDR机械检查（附加）', extra: true, items: [
+      { es: 'Motor', zh: '发动机' },
+      { es: 'Sistema de Transmisión', zh: '传动系统' },
+      { es: 'Dirección', zh: '转向系统' },
+      { es: 'Suspensión', zh: '悬挂系统' },
+      { es: 'Refrigerante', zh: '冷却液' },
+      { es: 'Hidráulico', zh: '液压系统' },
+      { es: 'Limpieza', zh: '清洁' }
+    ] }
+  ];
+
+  // Sistemas del RDV anterior (16) → sección nueva, para agrupar el histórico.
+  window.LEGACY_SYSTEM_SECTION = {
+    'Motor': 'H', 'Sistema de Transmisión': 'H', 'Dirección': 'H', 'Suspensión': 'H',
+    'Refrigerante': 'H', 'Hidráulico': 'H', 'Limpieza': 'H',
+    'Sistema Eléctrico': 'A', 'Luces': 'A', 'Alarma de retroceso': 'A',
+    'Elevavidrios': 'B', 'Carrocería': 'B',
+    'Frenos': 'C', 'Neumáticos': 'D', 'Sistema de Combustible': 'E',
+    'Seguridad (extintor, conos)': 'F'
+  };
+
+  /** Sección ('A'…'H') de un ítem guardado: usa `seccion` o, en reportes viejos, el mapa legado. */
+  window.getSectionForSystem = function (nombreEs, seccion) {
+    if (seccion) return seccion;
+    if (window.LEGACY_SYSTEM_SECTION[nombreEs]) return window.LEGACY_SYSTEM_SECTION[nombreEs];
+    for (const sec of window.INSPECTION_SECTIONS) {
+      if (sec.items.some(i => i.es === nombreEs)) return sec.id;
+    }
+    return null;
+  };
+
+  // Respaldo offline de los catálogos: la fuente real son las tablas vehicles y
+  // drivers de Supabase (editables desde el dashboard).
+  window.VEHICLES_DEFAULT = Object.keys(window.VEHICLE_PLATE_MAP).map(cod => ({
+    codigo_vehiculo: cod,
+    placa: window.VEHICLE_PLATE_MAP[cod],
+    marca: window.VEHICLE_BRAND_MAP[cod] || '',
+    anio: null, tonelaje: '', tipo: 'CAMIONETA', aplica_pertiga: false,
+    vigencia_matricula: null, vigencia_revision: null, activo: true
+  }));
+  window.DRIVERS_DEFAULT = [];
+
+  // Catálogos vivos (se mutan en el lugar, igual que MAINTENANCE_ALERTS). Arrancan
+  // con lo último recibido de Supabase en este dispositivo o con los respaldos.
+  window.CATALOG = { vehicles: window.VEHICLES_DEFAULT.slice(), drivers: window.DRIVERS_DEFAULT.slice() };
+  window.applyCatalogs = function (cat) {
+    if (cat && Array.isArray(cat.vehicles) && cat.vehicles.length) window.CATALOG.vehicles.splice(0, Infinity, ...cat.vehicles);
+    if (cat && Array.isArray(cat.drivers)) window.CATALOG.drivers.splice(0, Infinity, ...cat.drivers);
+    return window.CATALOG;
+  };
+  try {
+    window.applyCatalogs(JSON.parse(localStorage.getItem('RDV_GDR_CATALOG') || 'null'));
+  } catch (e) { /* sin localStorage o JSON inválido: quedan los respaldos */ }
+
   window.OPERATIVE_STATUSES = {
     OPERATIVO: { label: 'Operativo', color: '#34d399' },
     'MANT. PREVENTIVO': { label: 'Mant. Preventivo', color: '#fbbf24' },

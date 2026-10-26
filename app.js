@@ -40,8 +40,27 @@ const I18N = {
     ubicacionLabel: 'Ubicación',
     ubicacionPlaceholder: 'Ciudad / Frente / Taller',
 
-    section2Title: '2) Evaluación de sistemas',
-    evalNote: (attention, critical) => `Marca el estado de cada sistema. Si seleccionas <span class="text-yellow-400 font-semibold">${attention}</span> o <span class="text-red-400 font-semibold">${critical}</span>, agrega una observación.`,
+    section2Title: '2) Inspección del vehículo',
+    evalNote: 'Marca el código de cada ítem. Si eliges un código distinto de <span class="text-emerald-400 font-semibold">OK</span>, escribe una observación (obligatoria).',
+    cedulaLabel: 'Cédula',
+    induccionLabel: 'Posee inducción',
+    tipoLicLabel: 'Tipo de licencia',
+    cadLicLabel: 'Caducidad de licencia',
+    puntosLicLabel: 'Puntos de licencia',
+    anioLabel: 'Año',
+    tonelajeLabel: 'Tonelaje',
+    vigMatLabel: 'Vigencia de matrícula',
+    vigRevLabel: 'Vigencia de revisión vehicular',
+    btnTodoOk: 'Todo OK',
+    sectionNA: 'No aplica a este vehículo',
+    warnLicVencida: (f) => `⚠️ La licencia del conductor está VENCIDA (${f}).`,
+    warnLicPorVencer: (d, f) => `⚠️ La licencia del conductor vence en ${d} día(s) (${f}).`,
+    warnMatVencida: (f) => `⚠️ La matrícula del vehículo está VENCIDA (${f}).`,
+    warnMatPorVencer: (d, f) => `⚠️ La matrícula vence en ${d} día(s) (${f}).`,
+    warnRevVencida: (f) => `⚠️ La revisión vehicular está VENCIDA (${f}).`,
+    warnRevPorVencer: (d, f) => `⚠️ La revisión vehicular vence en ${d} día(s) (${f}).`,
+    warnSinInduccion: '⚠️ El conductor no posee inducción.',
+    valObs: (name) => `Escribe una observación para: ${name}.`,
     tableSistema: 'Sistema',
     tableEstado: 'Estado',
     tableObservacion: 'Observación (opcional)',
@@ -165,8 +184,27 @@ const I18N = {
     ubicacionLabel: '位置',
     ubicacionPlaceholder: '城市 / 作业面 / 车间',
 
-    section2Title: '2) 系统评估',
-    evalNote: (attention, critical) => `标记每个系统的状态。如果选择 <span class="text-yellow-400 font-semibold">${attention}</span> 或 <span class="text-red-400 font-semibold">${critical}</span>，请添加备注。`,
+    section2Title: '2) 车辆检查',
+    evalNote: '为每个项目选择代码。如果选择非 <span class="text-emerald-400 font-semibold">OK</span> 的代码，必须填写备注。',
+    cedulaLabel: '身份证号',
+    induccionLabel: '已完成入职培训',
+    tipoLicLabel: '驾照类型',
+    cadLicLabel: '驾照到期日',
+    puntosLicLabel: '驾照积分',
+    anioLabel: '年份',
+    tonelajeLabel: '吨位',
+    vigMatLabel: '行驶证有效期',
+    vigRevLabel: '车辆年检有效期',
+    btnTodoOk: '全部正常',
+    sectionNA: '不适用于此车辆',
+    warnLicVencida: (f) => `⚠️ 驾驶员驾照已过期（${f}）。`,
+    warnLicPorVencer: (d, f) => `⚠️ 驾驶员驾照将在 ${d} 天后到期（${f}）。`,
+    warnMatVencida: (f) => `⚠️ 车辆行驶证已过期（${f}）。`,
+    warnMatPorVencer: (d, f) => `⚠️ 行驶证将在 ${d} 天后到期（${f}）。`,
+    warnRevVencida: (f) => `⚠️ 车辆年检已过期（${f}）。`,
+    warnRevPorVencer: (d, f) => `⚠️ 车辆年检将在 ${d} 天后到期（${f}）。`,
+    warnSinInduccion: '⚠️ 驾驶员未完成入职培训。',
+    valObs: (name) => `请填写备注：${name}。`,
     tableSistema: '系统',
     tableEstado: '状态',
     tableObservacion: '备注（可选）',
@@ -388,54 +426,143 @@ function updateLangButton() {
   btn.title = currentLang === 'es' ? 'Cambiar a chino' : 'Switch to Spanish';
 }
 
-// ====== Data Arrays ======
-function getSystems() { return t('systems'); }
-function getStatusOpts() { return t('statusOpts'); }
+// ====== Inspección (formato SE-PR-009-FOR-02 V03) ======
+const SECTIONS = window.INSPECTION_SECTIONS || [];
+const CODES = window.INSPECTION_CODES || [];
+const CODE_TO_ESTADO = window.INSPECTION_CODE_TO_ESTADO || {};
+const FORMATO_VERSION = window.INSPECTION_FORMAT
+  ? `${window.INSPECTION_FORMAT.codigo} V${window.INSPECTION_FORMAT.version}` : 'SE-PR-009-FOR-02 V03';
+const escHtml = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// ====== Build systems table ======
+function codeLabel(c) { return `${c.v} – ${currentLang === 'zh' ? c.zh : c.es}`; }
+
+function renderCodesLegend() {
+  const el = $('#codesLegend');
+  if (!el) return;
+  el.textContent = CODES.map(codeLabel).join('   ·   ');
+}
+
+// Selects de ítems aplicables al vehículo (los no aplicables quedan deshabilitados)
+function activeSelects() { return $$('select.sys-select').filter(s => !s.disabled); }
+
+function setSelectEstado(sel) {
+  sel.dataset.estado = CODE_TO_ESTADO[sel.value] || 'OK';
+}
+
 function buildSystemsTable() {
-  const tbody = $('#sysTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  const systems = getSystems();
-  const opts = getStatusOpts();
-  const notePlaceholder = t('sysNotePlaceholder');
-  systems.forEach((name, i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="p-2">${name}</td>
-      <td class="p-2">
-        <select class="sys-select" id="sys-${i}-sel" data-sys="${name}" data-sys-es="${I18N.es.systems[i]}">
-          ${opts.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
-        </select>
-      </td>
-      <td class="p-2"><input id="sys-${i}-note" class="sys-note" placeholder="${notePlaceholder}"></td>`;
-    tbody.appendChild(tr);
+  const host = $('#sysSections');
+  if (!host) return;
+  host.innerHTML = '';
+  let k = 0;
+  SECTIONS.forEach((sec, si) => {
+    const det = document.createElement('details');
+    det.className = 'sys-section';
+    det.dataset.sec = sec.id;
+    if (sec.aplica) det.dataset.aplica = sec.aplica;
+    if (si === 0) det.open = true;
+    const title = currentLang === 'zh' ? sec.zh : sec.es;
+    const opts = CODES.map(c => `<option value="${c.v}">${escHtml(codeLabel(c))}</option>`).join('');
+    const rows = sec.items.map(it => {
+      const name = currentLang === 'zh' ? it.zh : it.es;
+      const i = k++;
+      return `<div class="sys-row grid gap-2 p-2 border-t border-white/10" data-item-aplica="${it.aplica || ''}">
+        <div class="text-sm">${escHtml(name)}</div>
+        <select class="sys-select" id="sys-${i}-sel" data-sys="${escHtml(name)}" data-sys-es="${escHtml(it.es)}" data-sec="${sec.id}" data-estado="OK">${opts}</select>
+        <input id="sys-${i}-note" class="sys-note sys-note-wide" placeholder="${escHtml(t('sysNotePlaceholder'))}">
+      </div>`;
+    }).join('');
+    det.innerHTML = `<summary class="cursor-pointer select-none p-2 font-semibold bg-white/5 rounded-lg">${escHtml(title)}</summary>
+      <div class="sys-body"><div class="p-2 flex items-center gap-2">
+        <button type="button" class="btn-todo-ok text-xs px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40" data-sec="${sec.id}">${escHtml(t('btnTodoOk'))}</button>
+      </div>${rows}</div>`;
+    host.appendChild(det);
   });
-  // Re-attach listeners
-  $$('select[id^=sys-]').forEach(el => el.addEventListener('change', ()=>{
-    const anyCritical = $$('select[id^=sys-]').some(s=> s.value==='CRI');
-    if (anyCritical && aptoNo) aptoNo.checked = true;
+  applyApplicability();
+}
+
+// Delegación de eventos (los selects se reconstruyen al cambiar de idioma)
+(function wireSections() {
+  const host = document.getElementById('sysSections');
+  if (!host) return;
+  host.addEventListener('change', (e) => {
+    const sel = e.target.closest && e.target.closest('select.sys-select');
+    if (!sel) return;
+    setSelectEstado(sel);
+    if (activeSelects().some(s => CODE_TO_ESTADO[s.value] === 'CRI') && aptoNo) aptoNo.checked = true;
     saveDraft();
-  }));
-  $$('input[id^=sys-][id$=note]').forEach(el => el.addEventListener('input', saveDraft));
+  });
+  host.addEventListener('input', (e) => {
+    if (e.target.classList && e.target.classList.contains('sys-note')) saveDraft();
+  });
+  host.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('.btn-todo-ok');
+    if (!btn) return;
+    $$(`select.sys-select[data-sec="${btn.dataset.sec}"]`).filter(s => !s.disabled).forEach(s => { s.value = 'OK'; setSelectEstado(s); });
+    saveDraft();
+  });
+})();
+
+// Valores por nombre_es (sobreviven a la reconstrucción por idioma o por vehículo)
+function captureSysValues() {
+  const m = {};
+  $$('select.sys-select').forEach(s => {
+    m[s.dataset.sysEs] = { val: s.value, note: ($(`#${s.id.replace('-sel','-note')}`) || {}).value || '' };
+  });
+  return m;
+}
+function restoreSysValues(m) {
+  if (!m) return;
+  $$('select.sys-select').forEach(s => {
+    const it = m[s.dataset.sysEs];
+    if (!it) return;
+    let v = it.val || 'OK';
+    if (v === 'OBS') v = 'VE'; // borradores del formato anterior
+    if (v === 'CRI') v = 'FA';
+    s.value = CODE_TO_ESTADO[v] ? v : 'OK';
+    setSelectEstado(s);
+    const n = $(`#${s.id.replace('-sel','-note')}`);
+    if (n) n.value = it.note || '';
+  });
 }
 
 function rebuildSystemsTable() {
-  // Save current values
-  const currentValues = $$('select[id^=sys-]').map(s => ({val: s.value, note: $(`#${s.id.replace('-sel','-note')}`)?.value || ''}));
+  const saved = captureSysValues();
+  const openSecs = $$('details.sys-section[open]').map(d => d.dataset.sec);
   buildSystemsTable();
-  // Restore values
-  currentValues.forEach((it, i) => {
-    const s = document.querySelector(`#sys-${i}-sel`);
-    const n = document.querySelector(`#sys-${i}-note`);
-    if (s) s.value = it.val;
-    if (n) n.value = it.note;
+  restoreSysValues(saved);
+  $$('details.sys-section').forEach(d => { d.open = openSecs.includes(d.dataset.sec); });
+  renderCodesLegend();
+}
+
+// Oculta/deshabilita grúa y pértiga según el vehículo elegido
+function applyApplicability() {
+  const veh = vehicleInfo(currentVehicleCode());
+  $$('details.sys-section').forEach(det => {
+    const secOk = det.dataset.aplica !== 'GRUA' || (veh && veh.tipo === 'GRUA');
+    det.classList.toggle('hidden', !secOk);
+    $$('.sys-row', det).forEach(row => {
+      const itemOk = row.dataset.itemAplica !== 'PERTIGA' || (veh && veh.aplica_pertiga);
+      const on = secOk && itemOk;
+      row.classList.toggle('hidden', !on);
+      const sel = $('select', row);
+      if (sel) sel.disabled = !on;
+    });
   });
 }
 
-// Build initially
-buildSystemsTable();
+// ====== Catálogos (vehículos y conductores) ======
+function vehicleInfo(code) {
+  if (!code) return null;
+  return ((window.CATALOG && window.CATALOG.vehicles) || []).find(v => v.codigo_vehiculo === code && v.activo !== false) || null;
+}
+function vehicleCodes() {
+  return ((window.CATALOG && window.CATALOG.vehicles) || []).filter(v => v.activo !== false).map(v => v.codigo_vehiculo);
+}
+function driverInfo(name) {
+  const n = (name || '').trim().toLowerCase();
+  if (!n) return null;
+  return ((window.CATALOG && window.CATALOG.drivers) || []).find(d => d.activo !== false && (d.nombre || '').trim().toLowerCase() === n) || null;
+}
 
 // Form elements
 const form = $('#rdvForm');
@@ -448,27 +575,100 @@ const liveCodigo = $('#liveCodigo');
 const btnGenerar = $('#btnGenerar'), btnImprimir = $('#btnImprimir'), btnLimpiar = $('#btnLimpiar');
 const kmWarning = $('#kmWarning');
 
-// Mapa de códigos de vehículo a placas (compartido en constants.js)
-const vehiclePlateMap = window.VEHICLE_PLATE_MAP || {
-  'ECO04': 'PCX 9910',
-  'ECO05': 'PCX 9915',
-  'ECO06': 'PCX 9919',
-  'ECO23': 'PDI 5797',
-  'ECO26': 'PDI 5814',
-  'ECO36': 'PDI 5771',
-  'ECO62': 'ZBA 1564',
-  'ECO70': 'ABQ 2836',
-  'ECO71': 'ABQ 2837',
-  'M01': 'PCX 9943',
-  'GE-16': 'Sin placa',
-  'BZ-01': 'Sin placa'
-};
-
 // Mantenimiento: umbrales en constants.js
 const MAINTENANCE_ALERTS = window.MAINTENANCE_ALERTS || {};
 const ALERT_RANGE = window.ALERT_RANGE || 4000;
 
-const AVAILABLE_CODES = Object.keys(vehiclePlateMap);
+// Campos del encabezado que se rellenan desde los catálogos
+const cedula = $('#cedula'), induccion = $('#induccion'), tipoLic = $('#tipoLic'), cadLic = $('#cadLic'), puntosLic = $('#puntosLic');
+const anio = $('#anio'), tonelaje = $('#tonelaje'), vigMat = $('#vigMat'), vigRev = $('#vigRev');
+const catalogWarn = $('#catalogWarn');
+const HEADER_FIELDS = [cedula, tipoLic, cadLic, puntosLic, anio, tonelaje, vigMat, vigRev];
+
+buildSystemsTable();
+renderCodesLegend();
+
+// Select de vehículos y lista de conductores desde el catálogo
+function populateVehicleSelect() {
+  if (!codSelect) return;
+  const current = codSelect.value;
+  const codes = vehicleCodes();
+  if (!codes.length) return;
+  Array.from(codSelect.querySelectorAll('option')).forEach(o => { if (!o.disabled && o.value !== 'OTRO') o.remove(); });
+  codes.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    codSelect.appendChild(o);
+  });
+  if (current && codes.includes(current)) codSelect.value = current;
+}
+function populateDriversList() {
+  const dl = $('#driversList');
+  if (!dl) return;
+  dl.innerHTML = '';
+  ((window.CATALOG && window.CATALOG.drivers) || []).filter(d => d.activo !== false).forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.nombre;
+    dl.appendChild(o);
+  });
+}
+function fillFromVehicle() {
+  const v = vehicleInfo(currentVehicleCode());
+  if (!v) { applyApplicability(); return; }
+  if (placa) placa.value = v.placa || '';
+  if (anio) anio.value = v.anio != null ? v.anio : '';
+  if (tonelaje) tonelaje.value = v.tonelaje || '';
+  if (vigMat) vigMat.value = v.vigencia_matricula || '';
+  if (vigRev) vigRev.value = v.vigencia_revision || '';
+  applyApplicability();
+  checkCatalogWarnings();
+}
+function fillFromDriver() {
+  const d = driverInfo(conductor && conductor.value);
+  if (!d) { checkCatalogWarnings(); return; }
+  if (cedula) cedula.value = d.cedula || '';
+  if (induccion) induccion.checked = !!d.posee_induccion;
+  if (tipoLic) tipoLic.value = d.tipo_licencia || '';
+  if (cadLic) cadLic.value = d.caducidad_licencia || '';
+  if (puntosLic) puntosLic.value = d.puntos_licencia != null ? d.puntos_licencia : '';
+  checkCatalogWarnings();
+}
+
+// Avisos no bloqueantes de vencimientos (≤30 días)
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+function daysUntil(iso) {
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const target = new Date(+m[1], +m[2] - 1, +m[3]);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86400000);
+}
+function checkCatalogWarnings() {
+  if (!catalogWarn) return;
+  const msgs = [];
+  const check = (iso, vencida, porVencer) => {
+    const d = daysUntil(iso);
+    if (d === null) return;
+    if (d < 0) msgs.push(t(vencida, fmtDate(iso)));
+    else if (d <= 30) msgs.push(t(porVencer, d, fmtDate(iso)));
+  };
+  if (conductor && conductor.value.trim()) {
+    check(cadLic && cadLic.value, 'warnLicVencida', 'warnLicPorVencer');
+    if (induccion && !induccion.checked && driverInfo(conductor.value)) msgs.push(t('warnSinInduccion'));
+  }
+  if (currentVehicleCode()) {
+    check(vigMat && vigMat.value, 'warnMatVencida', 'warnMatPorVencer');
+    check(vigRev && vigRev.value, 'warnRevVencida', 'warnRevPorVencer');
+  }
+  catalogWarn.innerHTML = msgs.map(m => `<div>${escHtml(m)}</div>`).join('');
+  catalogWarn.classList.toggle('hidden', !msgs.length);
+}
+populateVehicleSelect();
+populateDriversList();
 
 // Defaults
 if (fecha) fecha.value = nowLocal();
@@ -671,10 +871,6 @@ async function checkKmCoherence() {
 }
 
 const updateLiveCode = () => {
-  if (cod && placa) {
-    const vehicleCode = cod.value.toUpperCase();
-    placa.value = vehiclePlateMap[vehicleCode] || '';
-  }
   const d = fecha && fecha.value ? new Date(fecha.value) : new Date();
   const prefix = codePrefixFor(d);
   const show = (v) => { if (liveCodigo) liveCodigo.textContent = `${prefix}V${v}`; };
@@ -690,7 +886,7 @@ const updateLiveCode = () => {
 };
 
 // Events
-if (cod) cod.addEventListener('input', e => { cod.value = cod.value.toUpperCase(); updateLiveCode(); checkMaintenance(); checkKmCoherence(); saveDraft(); });
+if (cod) cod.addEventListener('input', e => { cod.value = cod.value.toUpperCase(); fillFromVehicle(); updateLiveCode(); checkMaintenance(); checkKmCoherence(); saveDraft(); });
 if (codSelect) codSelect.addEventListener('change', e => {
   if (codSelect.value === 'OTRO') {
     cod.disabled = false;
@@ -700,6 +896,7 @@ if (codSelect) codSelect.addEventListener('change', e => {
     cod.value = codSelect.value;
     cod.disabled = true;
     cod.classList.add('hidden');
+    fillFromVehicle();
     updateLiveCode();
     checkMaintenance();
     checkKmCoherence();
@@ -719,6 +916,15 @@ async function refreshLiveData(force) {
   Object.keys(lastKmCache).forEach(k => delete lastKmCache[k]);
   if (typeof window.refreshMaintenanceAlerts === 'function') {
     try { await window.refreshMaintenanceAlerts(); } catch (e) {}
+  }
+  if (typeof window.refreshCatalogs === 'function') {
+    try {
+      await window.refreshCatalogs();
+      populateVehicleSelect();
+      populateDriversList();
+      applyApplicability();
+      checkCatalogWarnings();
+    } catch (e) {}
   }
   checkMaintenance();
   checkKmCoherence();
@@ -741,7 +947,7 @@ window.addEventListener('pageshow', (e) => {
 });
 
 // Si el navegador sirvió JS viejo desde caché, se detecta con version.json y se recarga una vez
-const APP_VERSION = '261006-01';
+const APP_VERSION = '261026-03';
 let lastVersionCheck = 0;
 async function checkAppVersion() {
   const now = Date.now();
@@ -762,6 +968,11 @@ async function checkAppVersion() {
 checkAppVersion();
 
 [placa, km, conductor, inspector, ubicacion, obsGeneral].forEach(el => el && el.addEventListener('input', () => { if(el === km) { checkMaintenance(); checkKmCoherence(); } saveDraft(); }));
+// Conductor del catálogo: al coincidir el nombre se rellenan cédula, inducción y licencia
+if (conductor) conductor.addEventListener('change', () => { fillFromDriver(); saveDraft(); });
+if (conductor) conductor.addEventListener('input', () => { if (driverInfo(conductor.value)) fillFromDriver(); });
+HEADER_FIELDS.forEach(el => el && el.addEventListener('input', () => { checkCatalogWarnings(); saveDraft(); }));
+if (induccion) induccion.addEventListener('change', () => { checkCatalogWarnings(); saveDraft(); });
 
 // Image previews + resize
 const readAndPreview = (file, imgEl, cb) => {
@@ -828,6 +1039,9 @@ function resetFormState(){
   kmCoherenceSuspect = false;
   kmCoherenceMsg = '';
   if (kmWarning) { kmWarning.textContent = ''; kmWarning.classList.add('hidden'); }
+  $$('select.sys-select').forEach(setSelectEstado);
+  applyApplicability();
+  checkCatalogWarnings();
   updateLiveCode();
   if (btnImprimir) {
     btnImprimir.disabled = true;
@@ -836,7 +1050,13 @@ function resetFormState(){
 }
 
 function saveDraft(){
-  const sys = $$('select[id^=sys-]').map(s => ({name: s.dataset.sysEs, val: s.value, note: $(`#${s.id.replace('-sel','-note')}`).value || ''}));
+  const sys = captureSysValues();
+  const hdr = {
+    cedula: cedula && cedula.value || '', induccion: !!(induccion && induccion.checked),
+    tipoLic: tipoLic && tipoLic.value || '', cadLic: cadLic && cadLic.value || '', puntosLic: puntosLic && puntosLic.value || '',
+    anio: anio && anio.value || '', tonelaje: tonelaje && tonelaje.value || '',
+    vigMat: vigMat && vigMat.value || '', vigRev: vigRev && vigRev.value || ''
+  };
   let selectedCod = '';
   if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
     selectedCod = codSelect.value;
@@ -849,7 +1069,7 @@ function saveDraft(){
     placa: placa && placa.value || '', km: km && km.value || '', fecha: fecha && fecha.value || '',
     conductor: conductor && conductor.value || '', inspector: inspector && inspector.value || '', ubicacion: ubicacion && ubicacion.value || '',
     obsGeneral: obsGeneral && obsGeneral.value || '', apto: aptoSi && aptoSi.checked ? 'SI' : 'NO',
-    sys, foto1Data, foto2Data, _t: new Date().toLocaleString(), _ts: Date.now(),
+    sys, hdr, foto1Data, foto2Data, _t: new Date().toLocaleString(), _ts: Date.now(),
     generado: informeGenerado,
     lang: currentLang
   };
@@ -905,7 +1125,7 @@ function loadDraft(){
       }
     } else if (cod && d.cod) {
       cod.value = d.cod;
-      if (AVAILABLE_CODES.includes(d.cod)) {
+      if (vehicleCodes().includes(d.cod)) {
         codSelect.value = d.cod;
         cod.disabled = true;
         cod.classList.add('hidden');
@@ -922,14 +1142,29 @@ function loadDraft(){
     if (inspector) inspector.value = d.inspector || '';
     if (ubicacion) ubicacion.value = d.ubicacion || '';
     if (obsGeneral) obsGeneral.value = d.obsGeneral || '';
-    if (Array.isArray(d.sys)) {
-      d.sys.forEach((it, i)=>{
-        const s = document.querySelector(`#sys-${i}-sel`);
-        const n = document.querySelector(`#sys-${i}-note`);
-        if (s) s.value = it.val || 'OK';
-        if (n) n.value = it.note || '';
-      });
+    if (d.hdr) {
+      if (cedula) cedula.value = d.hdr.cedula || '';
+      if (induccion) induccion.checked = !!d.hdr.induccion;
+      if (tipoLic) tipoLic.value = d.hdr.tipoLic || '';
+      if (cadLic) cadLic.value = d.hdr.cadLic || '';
+      if (puntosLic) puntosLic.value = d.hdr.puntosLic || '';
+      if (anio) anio.value = d.hdr.anio || '';
+      if (tonelaje) tonelaje.value = d.hdr.tonelaje || '';
+      if (vigMat) vigMat.value = d.hdr.vigMat || '';
+      if (vigRev) vigRev.value = d.hdr.vigRev || '';
     }
+    applyApplicability();
+    if (d.sys) {
+      if (Array.isArray(d.sys)) {
+        // borrador del formato anterior (lista por nombre_es)
+        const m = {};
+        d.sys.forEach(it => { if (it && it.name) m[it.name] = it; });
+        restoreSysValues(m);
+      } else {
+        restoreSysValues(d.sys);
+      }
+    }
+    checkCatalogWarnings();
     foto1Data = d.foto1Data || null;
     foto2Data = d.foto2Data || null;
     if (foto1Data && prev1) { prev1.src = foto1Data; prev1.classList.remove('hidden'); }
@@ -958,6 +1193,16 @@ function validar(){
   if (!placa || !placa.value.trim()) return t('valPlaca');
   if (!km || !km.value || Number(km.value) < 0) return t('valKm');
   if (!fecha || !fecha.value) return t('valFecha');
+  for (const sel of activeSelects()) {
+    if (sel.value === 'OK') continue;
+    const n = $(`#${sel.id.replace('-sel','-note')}`);
+    if (!n || !n.value.trim()) {
+      const det = sel.closest('details');
+      if (det) det.open = true;
+      if (n) n.focus();
+      return t('valObs', sel.dataset.sys);
+    }
+  }
   if (!foto1Data || !foto2Data) return t('valFoto');
   return null;
 }
@@ -966,37 +1211,61 @@ async function fillReport(){
   const code = await generateCode(d);
   lastGeneratedCode = code;
 
-  const repCod = $('#rep-codigo'); if (repCod) repCod.textContent = code;
-  $('#rep-fecha').textContent = formatDateTime(fecha.value);
+  const setTxt = (sel, v) => { const el = $(sel); if (el) el.textContent = v; };
+  const aprueba = !!(aptoSi && aptoSi.checked);
   const repApto = $('#rep-apto');
-  repApto.textContent = aptoSi && aptoSi.checked ? tr('repOperativo') : (aptoNo && aptoNo.checked ? tr('repPreventivo') : tr('repCorrectivo'));
-  repApto.style.color = aptoSi && aptoSi.checked ? 'green' : 'red';
+  repApto.textContent = aprueba ? tr('repOperativo') : (aptoNo && aptoNo.checked ? tr('repPreventivo') : tr('repCorrectivo'));
+  repApto.style.color = aprueba ? 'green' : 'red';
+  setTxt('#rep-aprueba', aprueba ? 'APRUEBA' : 'NO APRUEBA');
+  setTxt('#rep-fecha', formatDateTime(fecha.value));
+  setTxt('#rep-conductor', conductor && conductor.value || tr('repConductorEmpty'));
+  setTxt('#rep-cedula', cedula && cedula.value || '—');
+  setTxt('#rep-induccion', induccion && induccion.checked ? 'SÍ' : 'NO');
+  setTxt('#rep-tipolic', tipoLic && tipoLic.value || '—');
+  setTxt('#rep-cadlic', `${fmtDate(cadLic && cadLic.value)} / ${puntosLic && puntosLic.value !== '' ? puntosLic.value : '—'} pts`);
   let displayCode = '';
   if (codSelect && codSelect.value && codSelect.value !== 'OTRO') {
     displayCode = codSelect.value;
   } else if (cod && cod.value) {
     displayCode = cod.value.toUpperCase();
   }
-  $('#rep-cod').textContent = displayCode;
-  $('#rep-placa').textContent = (placa && placa.value || '').toUpperCase();
-  $('#rep-km').textContent = Number(km && km.value || 0).toLocaleString();
-  $('#rep-arch').textContent = code;
-  const repObs = $('#rep-obs'); if (repObs) repObs.textContent = (obsGeneral && obsGeneral.value || tr('repObsEmpty'));
-  $('#rep-conductor').textContent = conductor && conductor.value || tr('repConductorEmpty');
-  $('#rep-inspector').textContent = inspector && inspector.value || tr('repInspectorEmpty');
+  setTxt('#rep-cod', displayCode);
+  setTxt('#rep-placa', (placa && placa.value || '').toUpperCase());
+  setTxt('#rep-anio', `${anio && anio.value || '—'} / ${tonelaje && tonelaje.value || '—'}`);
+  setTxt('#rep-km', Number(km && km.value || 0).toLocaleString());
+  setTxt('#rep-vigmat', fmtDate(vigMat && vigMat.value));
+  setTxt('#rep-vigrev', fmtDate(vigRev && vigRev.value));
+  setTxt('#rep-arch', code);
+  const insp = inspector && inspector.value || tr('repInspectorEmpty');
+  setTxt('#rep-inspector', insp);
+  setTxt('#rep-conductor2', conductor && conductor.value || tr('repConductorEmpty'));
+  setTxt('#rep-legend', CODES.map(c => `${c.v} = ${c.es}`).join('   ·   '));
 
   $('#rep-img1').src = foto1Data;
   $('#rep-img2').src = foto2Data;
 
-  const body = $('#rep-sys-body');
-  body.innerHTML = '';
-  $$('select[id^=sys-]').forEach(s => {
-    const note = $(`#${s.id.replace('-sel','-note')}`).value || '';
-    const trEl = document.createElement('tr');
-    const statusText = s.value==='OK' ? tr('repStatusOK') : (s.value==='OBS' ? tr('repStatusOBS') : tr('repStatusCRI'));
-    trEl.innerHTML = `<td>${s.dataset.sysEs}</td><td>${statusText}</td><td>${note || tr('repNoteEmpty')}</td>`;
-    body.appendChild(trEl);
+  // Tablas por sección (siempre en español); solo ítems aplicables al vehículo.
+  // Como en el formato: ítem | ESTADO. Las notas por ítem van a Observaciones.
+  const itemNotes = [];
+  const secHtml = (sec) => {
+    const sels = $$(`select.sys-select[data-sec="${sec.id}"]`).filter(x => !x.disabled);
+    if (!sels.length) return '';
+    const rows = sels.map(x => {
+      const note = ($(`#${x.id.replace('-sel','-note')}`).value || '').trim();
+      if (note) itemNotes.push(`${x.dataset.sysEs} (${x.value}): ${note}`);
+      return `<tr><td>${escHtml(x.dataset.sysEs)}</td><td class="rep-code">${x.value}</td></tr>`;
+    }).join('');
+    return `<table class="rep-table rep-sec"><thead><tr><th>${escHtml(sec.es)}</th><th class="rep-code">ESTADO</th></tr></thead><tbody>${rows}</tbody></table>`;
+  };
+  let left = '', right = '';
+  SECTIONS.forEach(sec => {
+    if (['A', 'B', 'GRUA'].includes(sec.id)) left += secHtml(sec);
+    else right += secHtml(sec);
   });
+  $('#rep-left').innerHTML = left;
+  $('#rep-right').innerHTML = right;
+  const gen = (obsGeneral && obsGeneral.value || '').trim();
+  setTxt('#rep-obs', [gen, ...itemNotes].filter(Boolean).join('\n') || tr('repObsEmpty'));
 
   if (liveCodigo) liveCodigo.textContent = code;
   return code;
@@ -1016,15 +1285,19 @@ function getReportPayload() {
   const estadoOperativo = aptoSi && aptoSi.checked ? tr('repOperativo')
     : (aptoNo && aptoNo.checked ? tr('repPreventivo') : tr('repCorrectivo'));
 
-  const systems = $$('select[id^=sys-]').map(s => {
+  const systems = activeSelects().map(s => {
     const note = $(`#${s.id.replace('-sel','-note')}`)?.value || '';
     return {
       nombre_es: s.dataset.sysEs,
       nombre_ui: s.dataset.sys,
-      estado: s.value || 'OK',
-      observacion: note
+      estado: CODE_TO_ESTADO[s.value] || 'OK',
+      observacion: note,
+      seccion: s.dataset.sec,
+      codigo: s.value || 'OK'
     };
   });
+  const orNull = (el) => (el && el.value ? el.value : null);
+  const toInt = (el) => { const n = parseInt(el && el.value, 10); return isNaN(n) ? null : n; };
 
   return {
     header: {
@@ -1040,6 +1313,16 @@ function getReportPayload() {
       obs_general: obsGeneral && obsGeneral.value || '',
       archivo: code,
       version: version,
+      cedula: cedula && cedula.value || '',
+      posee_induccion: !!(induccion && induccion.checked),
+      tipo_licencia: tipoLic && tipoLic.value || '',
+      caducidad_licencia: orNull(cadLic),
+      puntos_licencia: toInt(puntosLic),
+      anio: toInt(anio),
+      tonelaje: tonelaje && tonelaje.value || '',
+      vigencia_matricula: orNull(vigMat),
+      vigencia_revision: orNull(vigRev),
+      formato_version: FORMATO_VERSION,
       km_sospechoso: !!kmMarcadoSospechoso,
       km_nota: kmMarcadoSospechoso ? kmCoherenceMsg : ''
     },

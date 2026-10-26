@@ -57,18 +57,42 @@
         synced_at: new Date().toISOString()
       };
 
+      // Encabezado del formato SE-PR-009 (copia del catálogo al momento del reporte)
+      const v03Row = Object.assign({}, reportRow, {
+        cedula: header.cedula || null,
+        posee_induccion: header.posee_induccion == null ? null : !!header.posee_induccion,
+        tipo_licencia: header.tipo_licencia || null,
+        caducidad_licencia: header.caducidad_licencia || null,
+        puntos_licencia: header.puntos_licencia === '' || header.puntos_licencia == null ? null : Number(header.puntos_licencia),
+        anio: header.anio === '' || header.anio == null ? null : Number(header.anio),
+        tonelaje: header.tonelaje || null,
+        vigencia_matricula: header.vigencia_matricula || null,
+        vigencia_revision: header.vigencia_revision || null,
+        formato_version: header.formato_version || null
+      });
+      const V03_COLS = /cedula|posee_induccion|tipo_licencia|caducidad_licencia|puntos_licencia|anio|tonelaje|vigencia_|formato_version/;
+
       const upsertReport = row => client
         .from('reports')
         .upsert(row, { onConflict: 'cod_reporte' })
         .select('id, cod_reporte');
 
-      let { data: reportRows, error: repError } = await upsertReport(reportRow);
+      let { data: reportRows, error: repError } = await upsertReport(v03Row);
+
+      // Compatibilidad: sin la migración del formato V03 se reintenta sin esas columnas.
+      let hasV03 = true;
+      if (repError && V03_COLS.test(repError.message || '')) {
+        console.warn('Columnas del formato V03 ausentes. Aplica migration_inspeccion_v03.sql en Supabase.');
+        hasV03 = false;
+        ({ data: reportRows, error: repError } = await upsertReport(reportRow));
+      }
+      const baseRow = hasV03 ? v03Row : reportRow;
 
       // Compatibilidad: si aún no se aplicó la migración de km dudoso en la
       // base, se reintenta sin esas columnas para no perder el reporte.
       if (repError && /km_sospechoso|km_nota/.test(repError.message || '')) {
         console.warn('Columnas km_sospechoso/km_nota ausentes. Aplica migration_km_sospechoso.sql en Supabase.');
-        const { km_sospechoso, km_nota, ...legacyRow } = reportRow;
+        const { km_sospechoso, km_nota, ...legacyRow } = baseRow;
         ({ data: reportRows, error: repError } = await upsertReport(legacyRow));
       }
 
@@ -84,12 +108,22 @@
           nombre_es: s.nombre_es,
           nombre_ui: s.nombre_ui || s.nombre_es,
           estado: s.estado,
-          observacion: s.observacion || ''
+          observacion: s.observacion || '',
+          seccion: s.seccion || null,
+          codigo: s.codigo || null
         }));
 
-        const { error: sysError } = await client
+        const upsertSystems = rows => client
           .from('report_systems')
-          .upsert(systemsPayload, { onConflict: 'report_id,nombre_es' });
+          .upsert(rows, { onConflict: 'report_id,nombre_es' });
+
+        let { error: sysError } = await upsertSystems(systemsPayload);
+        // Sin la migración V03 se guarda solo el estado agregado.
+        if (sysError && /seccion|codigo/.test(sysError.message || '')) {
+          ({ error: sysError } = await upsertSystems(
+            systemsPayload.map(({ seccion, codigo, ...legacy }) => legacy)
+          ));
+        }
 
         if (sysError) throw sysError;
       }
@@ -324,6 +358,89 @@
     return true;
   }
 
+  // ====== Catálogos de vehículos y conductores (formato SE-PR-009) ======
+
+  const VEHICLE_COLS = 'codigo_vehiculo, placa, marca, anio, tonelaje, tipo, aplica_pertiga, vigencia_matricula, vigencia_revision, activo';
+  const DRIVER_COLS = 'nombre, cedula, posee_induccion, tipo_licencia, caducidad_licencia, puntos_licencia, activo';
+  const emptyToNull = v => (v === '' || v === undefined ? null : v);
+
+  /** Vehículos y conductores activos. */
+  async function getCatalogs() {
+    try {
+      const [v, d] = await Promise.all([
+        client.from('vehicles').select(VEHICLE_COLS).eq('activo', true).order('codigo_vehiculo'),
+        client.from('drivers').select(DRIVER_COLS).eq('activo', true).order('nombre')
+      ]);
+      if (v.error) throw v.error;
+      if (d.error) throw d.error;
+      return { ok: true, data: { vehicles: v.data || [], drivers: d.data || [] } };
+    } catch (err) {
+      console.error('Error leyendo catálogos:', err);
+      return { ok: false, error: err };
+    }
+  }
+
+  /**
+   * Guarda el catálogo completo. Lo que ya no esté en la lista se da de baja
+   * (activo = false) porque el anon key no tiene DELETE.
+   * @param {{vehicles: Array, drivers: Array}} cat
+   */
+  async function saveCatalogs(cat) {
+    try {
+      const now = new Date().toISOString();
+      const vehicles = (cat.vehicles || [])
+        .filter(x => String(x.codigo_vehiculo || '').trim())
+        .map(x => ({
+          codigo_vehiculo: String(x.codigo_vehiculo).trim(),
+          placa: emptyToNull(x.placa), marca: emptyToNull(x.marca),
+          anio: emptyToNull(x.anio), tonelaje: emptyToNull(x.tonelaje),
+          tipo: x.tipo || 'CAMIONETA', aplica_pertiga: !!x.aplica_pertiga,
+          vigencia_matricula: emptyToNull(x.vigencia_matricula),
+          vigencia_revision: emptyToNull(x.vigencia_revision),
+          activo: true, updated_at: now
+        }));
+      const seen = new Set();
+      const drivers = (cat.drivers || [])
+        .filter(x => String(x.nombre || '').trim())
+        .map(x => ({
+          nombre: String(x.nombre).trim(),
+          cedula: emptyToNull(x.cedula), posee_induccion: !!x.posee_induccion,
+          tipo_licencia: emptyToNull(x.tipo_licencia),
+          caducidad_licencia: emptyToNull(x.caducidad_licencia),
+          puntos_licencia: emptyToNull(x.puntos_licencia),
+          activo: true, updated_at: now
+        }))
+        .filter(x => (seen.has(x.nombre) ? false : seen.add(x.nombre)));
+
+      const sync = async (table, key, rows) => {
+        if (rows.length) {
+          const { error } = await client.from(table).upsert(rows, { onConflict: key });
+          if (error) throw error;
+        }
+        let off = client.from(table).update({ activo: false, updated_at: now }).eq('activo', true);
+        if (rows.length) off = off.not(key, 'in', `(${rows.map(r => `"${String(r[key]).replace(/"/g, '')}"`).join(',')})`);
+        const { error } = await off;
+        if (error) throw error;
+      };
+      await sync('vehicles', 'codigo_vehiculo', vehicles);
+      await sync('drivers', 'nombre', drivers);
+      return { ok: true };
+    } catch (err) {
+      console.error('Error guardando catálogos:', err);
+      return { ok: false, error: err };
+    }
+  }
+
+  /** Carga los catálogos de la nube y los aplica sobre window.CATALOG (con copia local). */
+  async function refreshCatalogs() {
+    if (!navigator.onLine || typeof window.applyCatalogs !== 'function') return false;
+    const res = await getCatalogs();
+    if (!res.ok || !res.data.vehicles.length) return false;
+    window.applyCatalogs(res.data);
+    try { localStorage.setItem('RDV_GDR_CATALOG', JSON.stringify(res.data)); } catch (e) { /* sin respaldo local */ }
+    return true;
+  }
+
   // ====== Solicitudes de mantenimiento ECSA ======
 
   /**
@@ -472,4 +589,7 @@
   window.getMaintenanceAlertsFromSupabase = getMaintenanceAlerts;
   window.saveMaintenanceAlertsToSupabase = saveMaintenanceAlerts;
   window.refreshMaintenanceAlerts = refreshMaintenanceAlerts;
+  window.getCatalogsFromSupabase = getCatalogs;
+  window.saveCatalogsToSupabase = saveCatalogs;
+  window.refreshCatalogs = refreshCatalogs;
 })();

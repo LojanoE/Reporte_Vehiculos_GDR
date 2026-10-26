@@ -550,3 +550,47 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     display: none !important;
   }
 }
+
+
+/* ==== Formato SE-PR-009-FOR-02 V03: formulario por secciones ==== */
+.sys-section{ border:1px solid rgba(255,255,255,.12); border-radius:10px; margin-bottom:8px; overflow:hidden; }
+.sys-section > summary{ list-style:none; }
+.sys-section > summary::-webkit-details-marker{ display:none; }
+.sys-row{ grid-template-columns:1fr; align-items:center; }
+.sys-note-wide{ width:100%; }
+@media (min-width:768px){
+  .sys-row{ grid-template-columns:minmax(0,2fr) minmax(0,1.2fr) minmax(0,2fr); }
+}
+select.sys-select[data-estado="OK"]{ border-color:rgba(52,211,153,.5); }
+select.sys-select[data-estado="OBS"]{ border-color:rgba(251,191,36,.8); background-color:rgba(251,191,36,.15); }
+select.sys-select[data-estado="CRI"]{ border-color:rgba(248,113,113,.9); background-color:rgba(248,113,113,.18); }
+#catalogWarn{ border:1px solid rgba(251,191,36,.6); background:rgba(251,191,36,.12); color:#fde68a; border-radius:10px; padding:8px 10px; font-size:.85rem; }
+
+/* ==== Impresión del formato V03 (A4) ==== */
+@media print{
+  #report .rep-head td{ padding:4px 6px; }
+  #report .rep-info th{ width:18%; text-align:left; background:#eee; }
+  #report .rep-info td{ width:32%; }
+  #report .rep-info, #report .rep-head, #report .rep-apto-tbl{ margin-bottom:4px; }
+  #report .rep-legend{ border:1px solid #000; padding:3px 6px; font-size:8px; margin-bottom:4px; }
+  #report .rep-cols{ display:grid; grid-template-columns:1fr 1fr; gap:4px; align-items:start; margin-bottom:4px; }
+  #report .rep-sec{ margin-bottom:4px; page-break-inside:avoid; }
+  #report .rep-sec th, #report .rep-sec td{ font-size:8px; padding:1px 3px; line-height:1.2; }
+  #report .rep-sec thead th{ background:#ddd; text-align:left; }
+  #report .rep-sec .rep-code{ width:9mm; text-align:center; font-weight:700; }
+  #report .rep-apto-tbl th{ background:#eee; text-align:left; }
+}
+
+/* ==== Formato V03: hoja 1 A4 igual que el Excel; fotos en la hoja 2 ==== */
+@media print{
+  @page { size: A4; margin: 6mm; }
+  #report .print-grid{ display:grid !important; break-before:page; page-break-before:always; break-inside:avoid; }
+  #report .print-grid img{ height:120mm; }
+  #report .rep-sec th, #report .rep-sec td{ font-size:7.5px; padding:1px 3px; line-height:1.15; }
+  #report .rep-sec{ margin-bottom:3px; }
+  #report .rep-info th, #report .rep-info td, #report .rep-head td{ font-size:8px; padding:2px 4px; }
+  #report .rep-obs-block{ padding:3px 6px; margin-bottom:4px; }
+  #report .rep-obs-title{ font-size:8px; margin-bottom:2px; }
+  #report .rep-obs-content{ font-size:7.5px; min-height:12mm; line-height:1.2; }
+  #report footer{ break-inside:avoid; }
+}

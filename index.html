@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RDV—GDR</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css?v=260810-02">
+  <link rel="stylesheet" href="styles.css?v=261026-03">
 </head>
 <body>
   <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-2">
@@ -74,7 +74,8 @@
             <input id="fecha" type="datetime-local" required class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
           </label>
           <label class="block text-sm"><span data-i18n="conductorLabel">Conductor responsable</span>
-            <input id="conductor" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Nombre completo">
+            <input id="conductor" list="driversList" autocomplete="off" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Nombre completo">
+            <datalist id="driversList"></datalist>
           </label>
           <label class="block text-sm"><span data-i18n="inspectorLabel">Inspector / Gestor GDR</span>
             <input id="inspector" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="Nombre completo">
@@ -85,22 +86,49 @@
         </div>
       </div>
 
-      <h2 class="text-xl font-semibold" data-i18n="section2Title">2) Evaluación de sistemas</h2>
-      <p class="note" data-i18n="evalNote">Marca el estado de cada sistema. Si seleccionas <span class="text-yellow-400 font-semibold">Atención</span> o <span class="text-red-400 font-semibold">Crítico</span>, agrega una observación.</p>
+      <!-- Datos del conductor y del vehículo (formato SE-PR-009-FOR-02 V03) -->
+      <div class="grid-2">
+        <div class="space-y-3">
+          <label class="block text-sm"><span data-i18n="cedulaLabel">Cédula</span>
+            <input id="cedula" autocomplete="off" maxlength="20" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+          </label>
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" id="induccion" class="accent-emerald-400">
+            <span data-i18n="induccionLabel">Posee inducción</span>
+          </label>
+          <label class="block text-sm"><span data-i18n="tipoLicLabel">Tipo de licencia</span>
+            <input id="tipoLic" autocomplete="off" maxlength="10" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2" placeholder="C, E, G...">
+          </label>
+          <label class="block text-sm"><span data-i18n="cadLicLabel">Caducidad de licencia</span>
+            <input id="cadLic" type="date" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+          </label>
+          <label class="block text-sm"><span data-i18n="puntosLicLabel">Puntos de licencia</span>
+            <input id="puntosLic" type="number" min="0" max="30" step="1" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+          </label>
+        </div>
+        <div class="space-y-3">
+          <label class="block text-sm"><span data-i18n="anioLabel">Año</span>
+            <input id="anio" type="number" min="1980" max="2100" step="1" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+          </label>
+          <label class="block text-sm"><span data-i18n="tonelajeLabel">Tonelaje</span>
+            <input id="tonelaje" autocomplete="off" maxlength="20" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+          </label>
+          <label class="block text-sm"><span data-i18n="vigMatLabel">Vigencia de matrícula</span>
+            <input id="vigMat" type="date" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+          </label>
+          <label class="block text-sm"><span data-i18n="vigRevLabel">Vigencia de revisión vehicular</span>
+            <input id="vigRev" type="date" class="w-full mt-1 bg-black/30 border border-white/15 rounded-lg px-3 py-2">
+          </label>
+        </div>
+      </div>
+      <div id="catalogWarn" class="text-yellow-400 font-bold text-xs space-y-1 hidden"></div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm border border-white/10 rounded-lg overflow-hidden">
-          <thead class="bg-white/10">
-            <tr>
-              <th class="text-left p-2" data-i18n="tableSistema">Sistema</th>
-              <th class="text-left p-2" data-i18n="tableEstado">Estado</th>
-              <th class="text-left p-2" data-i18n="tableObservacion">Observación (opcional)</th>
-            </tr>
-          </thead>
-          <tbody id="sysTableBody" class="divide-y divide-white/10">
-            <!-- rows injected by JS -->
-          </tbody>
-        </table>
+      <h2 class="text-xl font-semibold" data-i18n="section2Title">2) Inspección del vehículo</h2>
+      <p class="note" data-i18n="evalNote">Marca el código de cada ítem. Si seleccionas un código distinto de OK, agrega una observación.</p>
+      <div id="codesLegend" class="text-xs text-white/70"></div>
+
+      <div id="sysSections" class="space-y-2">
+        <!-- secciones inyectadas por JS -->
       </div>
 
       <div class="grid-2">
@@ -161,64 +189,84 @@
     <!-- ====== PRINTABLE REPORT (A4) ====== -->
     <section id="report" class="print-only">
 
-      <div class="rep-card" style="margin-bottom:8px;">
-        <table class="rep-table">
-          <tr>
-            <th style="width:24%;">Fecha y hora</th><td id="rep-fecha"></td>
-            <th style="width:16%;">ESTADO</th><td id="rep-apto" style="font-weight:700;"></td>
-          </tr>
-          <tr>
-            <th>Código vehículo</th><td id="rep-cod"></td>
-            <th>Placa</th><td id="rep-placa"></td>
-          </tr>
-          <tr>
-            <th>Kilometraje</th><td id="rep-km"></td>
-            <th>Cod. Reporte</th><td id="rep-arch"></td>
-          </tr>
-          <tr>
-            <th>Conductor</th><td id="rep-conductor"></td>
-            <th>Inspector</th><td id="rep-inspector"></td>
-          </tr>
-        </table>
+      <table class="rep-table rep-head">
+        <tr>
+          <td style="width:18%; text-align:center;"><img src="ECUACORRIENTE.png" alt="" style="height:12mm; max-width:100%; object-fit:contain;"></td>
+          <td style="text-align:center;"><b>FORMATO DE INSPECCIÓN PARA CAMIONETAS Y CAMIONES</b><br><span style="font-size:9px;">GESTIÓN DE DEPÓSITOS DE RELAVES — GDR</span></td>
+          <td style="width:26%; font-size:9px;">Código: <b id="rep-fmt-cod">SE-PR-009-FOR-02</b><br>Versión: <b id="rep-fmt-ver">03</b><br>N.º informe: <b id="rep-arch"></b></td>
+        </tr>
+      </table>
+
+      <table class="rep-table rep-info">
+        <tr>
+          <th>Fecha de inspección</th><td id="rep-fecha"></td>
+          <th>Nombre del conductor</th><td id="rep-conductor"></td>
+        </tr>
+        <tr>
+          <th>Cédula</th><td id="rep-cedula"></td>
+          <th>Posee inducción</th><td id="rep-induccion"></td>
+        </tr>
+        <tr>
+          <th>Tipo de licencia</th><td id="rep-tipolic"></td>
+          <th>Caducidad / puntos de licencia</th><td id="rep-cadlic"></td>
+        </tr>
+        <tr>
+          <th>Código vehículo</th><td id="rep-cod"></td>
+          <th>Placa</th><td id="rep-placa"></td>
+        </tr>
+        <tr>
+          <th>Año / tonelaje</th><td id="rep-anio"></td>
+          <th>Kilometraje</th><td id="rep-km"></td>
+        </tr>
+        <tr>
+          <th>Vigencia matrícula</th><td id="rep-vigmat"></td>
+          <th>Vigencia revisión vehicular</th><td id="rep-vigrev"></td>
+        </tr>
+      </table>
+
+      <div id="rep-legend" class="rep-legend"></div>
+
+      <div class="rep-cols">
+        <div id="rep-left"></div>
+        <div id="rep-right"></div>
       </div>
 
-      <div class="rep-card" style="margin-bottom:8px;">
-        <div style="font-weight:700; margin-bottom:4px;">Evaluación de sistemas</div>
-        <table class="rep-table" id="rep-sys">
-          <thead>
-            <tr><th style="width:28%;">Sistema</th><th style="width:14%;">Estado</th><th>Observación</th></tr>
-          </thead>
-          <tbody id="rep-sys-body"></tbody>
-        </table>
+
+      <div class="rep-obs-block">
+        <div class="rep-obs-title">Observaciones generales</div>
+        <div id="rep-obs" class="rep-obs-content">—</div>
       </div>
 
-        <!-- Observaciones generales (impresión) -->
-        <div class="rep-obs-block">
-          <div class="rep-obs-title">Observaciones generales</div>
-          <div id="rep-obs" class="rep-obs-content">—</div>
-        </div>
+      <table class="rep-table rep-apto-tbl">
+        <tr>
+          <th style="width:22%;">Resultado</th>
+          <td id="rep-aprueba" style="width:26%; font-weight:700;"></td>
+          <th style="width:22%;">Estado operativo</th>
+          <td id="rep-apto" style="font-weight:700;"></td>
+        </tr>
+      </table>
 
-        <div class="print-grid">
-          <figure>
-            <img id="rep-img1" alt="Foto 1">
-            <figcaption style="font-size:12px; text-align:center;">Foto 1</figcaption>
-          </figure>
-          <figure>
-            <img id="rep-img2" alt="Foto 2">
-            <figcaption style="font-size:12px; text-align:center;">Foto 2</figcaption>
-          </figure>
-        </div>
-
-      <footer style="margin-top:8px; display:flex; gap:20px;">
+      <footer style="margin-top:6px; display:flex; gap:20px;">
         <div style="flex:1;">
-          <div style="height:40px;"></div>
-          <div style="border-top:1px solid #000; text-align:center; font-size:12px;">Firma Conductor</div>
+          <div style="height:34px;"></div>
+          <div style="border-top:1px solid #000; text-align:center; font-size:10px;">Responsable de la inspección: <span id="rep-inspector"></span></div>
         </div>
         <div style="flex:1;">
-          <div style="height:40px;"></div>
-          <div style="border-top:1px solid #000; text-align:center; font-size:12px;">Firma Inspector</div>
+          <div style="height:34px;"></div>
+          <div style="border-top:1px solid #000; text-align:center; font-size:10px;">Conductor: <span id="rep-conductor2"></span></div>
         </div>
       </footer>
+
+      <div class="print-grid">
+        <figure>
+          <img id="rep-img1" alt="Foto 1">
+          <figcaption style="font-size:12px; text-align:center;">Foto 1</figcaption>
+        </figure>
+        <figure>
+          <img id="rep-img2" alt="Foto 2">
+          <figcaption style="font-size:12px; text-align:center;">Foto 2</figcaption>
+        </figure>
+      </div>
     </section>
 
     <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg border border-white/20 shadow-lg hidden"></div>
@@ -255,9 +303,9 @@
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="constants.js?v=261006-01"></script>
-  <script src="supabase-client.js?v=261006-01"></script>
-  <script src="offline-queue.js?v=260810-02"></script>
-  <script src="app.js?v=261006-01"></script>
+  <script src="constants.js?v=261026-03"></script>
+  <script src="supabase-client.js?v=261026-03"></script>
+  <script src="offline-queue.js?v=261026-03"></script>
+  <script src="app.js?v=261026-03"></script>
 </body>
 </html>
